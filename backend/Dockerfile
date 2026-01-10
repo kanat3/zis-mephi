@@ -3,7 +3,7 @@ FROM golang:1.25.5-trixie AS build
 COPY . /build
 
 RUN cd /build && go build && mkdir /app && \
-    mv zis /app/backend && mv /build/config /app \
+    mv zis /app/backend && mv /build/config /app && mv *.sql /app \
     && rm -r /build
 
 WORKDIR /app
