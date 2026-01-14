@@ -43,6 +43,10 @@ export interface TestCase {
   name: string;
   status: string;
   created_at: string;
+  // Extended fields (not in backend yet, for UI purposes)
+  description?: string;
+  steps?: string;
+  expected_result?: string;
 }
 
 export interface TestPlan {
@@ -52,12 +56,18 @@ export interface TestPlan {
   goal: string;
   deadline?: string;
   created_at: string;
+  // Extended fields (not in backend yet)
+  status?: 'draft' | 'approved' | 'rejected';
+  comments?: string;
 }
 
 export interface TestSuite {
   id: number;
   name: string;
   created_at: string;
+  // Extended fields (not in backend yet)
+  description?: string;
+  test_case_ids?: number[];
 }
 
 export interface TestReport {
@@ -68,6 +78,8 @@ export interface TestReport {
   passed_tests: number;
   duration: number;
   created_at: string;
+  // Extended fields (not in backend yet)
+  is_archived?: boolean;
 }
 
 // Token management
@@ -173,7 +185,6 @@ class ApiClient {
     return this.request('/status');
   }
 
-  // Projects
   async getProjects(): Promise<Project[]> {
     return this.request<Project[]>('/projects');
   }
@@ -182,7 +193,7 @@ class ApiClient {
     return this.request<Project>(`/project?id=${id}`);
   }
 
-  async createProject(data: { name: string; responsible_name: string }): Promise<{ id: number }> {
+  async createProject(data: { name: string; responsible_name: string, completion_date: string}): Promise<{ id: number }> {
     return this.request<{ id: number }>('/project', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -208,7 +219,6 @@ class ApiClient {
     });
   }
 
-  // Test Cases
   async getTestCases(projectId: number): Promise<TestCase[]> {
     return this.request<TestCase[]>(`/test-cases?project_id=${projectId}`);
   }
@@ -244,7 +254,6 @@ class ApiClient {
     );
   }
 
-  // Test Plans
   async getTestPlans(): Promise<TestPlan[]> {
     return this.request<TestPlan[]>('/test-plans');
   }
@@ -266,7 +275,6 @@ class ApiClient {
     });
   }
 
-  // Test Suites
   async getTestSuites(): Promise<TestSuite[]> {
     return this.request<TestSuite[]>('/test-suites');
   }
@@ -289,12 +297,10 @@ class ApiClient {
     );
   }
 
-  // Requirements
   async getRequirements(): Promise<Requirement[]> {
     return this.request<Requirement[]>('/requirements');
   }
 
-  // Test Reports
   async runTests(data: { project_id: number; test_plan_id: number; test_suite_id: number }): Promise<{ id: number }> {
     return this.request<{ id: number }>('/run-tests', {
       method: 'POST',
@@ -304,6 +310,110 @@ class ApiClient {
 
   async getTestReports(): Promise<TestReport[]> {
     return this.request<TestReport[]>('/test-reports');
+  }
+
+  // These methods need to be implemented in the backend
+
+  // TODO: Backend - Implement PUT /project endpoint
+  async updateProject(id: number, data: { name?: string; responsible_name?: string; status?: string }): Promise<void> {
+    throw new Error('TODO: Backend needs to implement PUT /project endpoint');
+    // return this.request<void>(`/project?id=${id}`, {
+    //   method: 'PUT',
+    //   body: JSON.stringify(data),
+    // });
+  }
+
+  // TODO: Backend - Implement PUT /test-case endpoint  
+  async updateTestCase(id: number, data: { name?: string; status?: string; description?: string; steps?: string; expected_result?: string }): Promise<void> {
+    throw new Error('TODO: Backend needs to implement PUT /test-case endpoint');
+    // return this.request<void>(`/test-case?id=${id}`, {
+    //   method: 'PUT',
+    //   body: JSON.stringify(data),
+    // });
+  }
+
+  // TODO: Backend - Implement PUT /test-plan endpoint
+  async updateTestPlan(id: number, data: { name?: string; goal?: string; deadline?: string }): Promise<void> {
+    throw new Error('TODO: Backend needs to implement PUT /test-plan endpoint');
+    // return this.request<void>(`/test-plan?id=${id}`, {
+    //   method: 'PUT',
+    //   body: JSON.stringify(data),
+    // });
+  }
+
+  // TODO: Backend - Implement test plan approval endpoints
+  async approveTestPlan(id: number): Promise<void> {
+    throw new Error('TODO: Backend needs to implement POST /test-plan/approve endpoint');
+    // return this.request<void>(`/test-plan/approve?id=${id}`, {
+    //   method: 'POST',
+    // });
+  }
+
+  async rejectTestPlan(id: number, comments: string): Promise<void> {
+    throw new Error('TODO: Backend needs to implement POST /test-plan/reject endpoint');
+    // return this.request<void>(`/test-plan/reject?id=${id}`, {
+    //   method: 'POST',
+    //   body: JSON.stringify({ comments }),
+    // });
+  }
+
+  // TODO: Backend - Implement test suite CRUD endpoints
+  async createTestSuite(data: { name: string; description?: string }): Promise<{ id: number }> {
+    throw new Error('TODO: Backend needs to implement POST /test-suite endpoint');
+    // return this.request<{ id: number }>('/test-suite', {
+    //   method: 'POST',
+    //   body: JSON.stringify(data),
+    // });
+  }
+
+  async updateTestSuite(id: number, data: { name?: string; description?: string }): Promise<void> {
+    throw new Error('TODO: Backend needs to implement PUT /test-suite endpoint');
+    // return this.request<void>(`/test-suite?id=${id}`, {
+    //   method: 'PUT',
+    //   body: JSON.stringify(data),
+    // });
+  }
+
+  async deleteTestSuite(id: number): Promise<void> {
+    throw new Error('TODO: Backend needs to implement DELETE /test-suite endpoint');
+    // return this.request<void>(`/test-suite?id=${id}`, {
+    //   method: 'DELETE',
+    // });
+  }
+
+  // TODO: Backend - Implement test report management endpoints
+  async deleteTestReport(id: number): Promise<void> {
+    throw new Error('TODO: Backend needs to implement DELETE /test-report endpoint');
+    // return this.request<void>(`/test-report?id=${id}`, {
+    //   method: 'DELETE',
+    // });
+  }
+
+  async archiveTestReport(id: number): Promise<void> {
+    throw new Error('TODO: Backend needs to implement POST /test-report/archive endpoint');
+    // return this.request<void>(`/test-report/archive?id=${id}`, {
+    //   method: 'POST',
+    // });
+  }
+
+  // TODO: Backend - Implement project import/export
+  async uploadProject(file: File): Promise<{ id: number }> {
+    throw new Error('TODO: Backend needs to implement POST /project/upload endpoint');
+    // const formData = new FormData();
+    // formData.append('file', file);
+    // return this.request<{ id: number }>('/project/upload', {
+    //   method: 'POST',
+    //   body: formData,
+    //   headers: {}, // Let browser set Content-Type for FormData
+    // });
+  }
+
+  async downloadProject(id: number): Promise<Blob> {
+    throw new Error('TODO: Backend needs to implement GET /project/download endpoint');
+    // const response = await fetch(`${this.baseUrl}/project/download?id=${id}`, {
+    //   headers: this.getHeaders(),
+    // });
+    // return await response.blob();
   }
 }
 
