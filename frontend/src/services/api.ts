@@ -311,11 +311,10 @@ class ApiClient {
 
   // These methods need to be implemented in the backend
 
-  // TODO: Backend - Implement PUT /project endpoint
-  async updateProject(id: number, data: { name?: string; responsible_name?: string; status?: string }): Promise<void> {
-    throw new Error('TODO: Backend needs to implement PUT /project endpoint');
-    // return this.request<void>(`/project?id=${id}`, {
-    //   method: 'PUT',
+  async updateProject(data: { name: string; responsible_name: string, completion_date: string}): Promise<{ id: number }> {
+    throw new Error('TODO: Backend needs to implement PUT /test-case endpoint');
+    // return this.request<{ id: number }>('/project', {
+    //   method: 'PATCH',
     //   body: JSON.stringify(data),
     // });
   }
