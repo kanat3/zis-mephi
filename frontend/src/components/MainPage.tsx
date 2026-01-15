@@ -512,7 +512,6 @@ function ProjectsView({
 }) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [showUpdateProjectModal, setShowUpdateProjectModal] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
     responsible_name: currentUser.name,
@@ -544,17 +543,6 @@ function ProjectsView({
       await apiClient.createProject(newProject);
       setShowNewProjectModal(false);
       setNewProject({ name: '', responsible_name: currentUser.name , completion_date: ''});
-      await reloadData();
-    } catch (error) {
-      console.error('Failed to create project:', error);
-      showError('Ошибка при создании проекта');
-    }
-  };
-
-  const handleUpdateProject = async () => {
-    try {
-      await apiClient.updateProject(newProject);
-      setShowNewProjectModal(false);
       await reloadData();
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -682,13 +670,6 @@ function ProjectsView({
                     <Archive className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setShowUpdateProjectModal(true)}
-                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-                    title="Редактировать"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
                     onClick={() => handleDeleteProject(project)}
                     className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
                     title="Удалить"
@@ -708,47 +689,6 @@ function ProjectsView({
               </button>
             </div>
           ))}
-        </div>
-      )}
-      {/* Update Project Modal */}
-      {/* TODO: хз как это через такую форму сделать, тк класс проекта так не передать */}
-      {showUpdateProjectModal && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
-          onClick={() => setShowUpdateProjectModal(false)}
-        >
-          <div
-            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl text-[#f19fb5] mb-6">Обновление проекта (не работает)</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm mb-2 text-[#2b2f33]">Срок выполнения (опционально)</label>
-                <input
-                  type="date"
-                  value={newProject.completion_date}
-                  onChange={(e) => ({ ...newProject, completion_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-                  placeholder="Введите дату"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowUpdateProjectModal(false)}
-                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={() => handleUpdateProject()}
-                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
-              >
-                Обновить
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -841,10 +781,12 @@ function ProjectDetailView({
   const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
   const [showNewTestSuiteModal, setShowNewTestSuiteModal] = useState(false);
   const [newTestSuite, setNewTestSuite] = useState({ name: '' });
+  const [newDate, setNewDate] = useState({ completion_date: '' });
 
   const projectTestCases = testCasesData.filter(tc => tc.project_id === project.id);
   const projectTestPlans = testPlansData.filter(tp => tp.project_id === project.id);
   const projectTestSuites = testSuitesData;
+  const [showUpdateProjectModal, setShowUpdateProjectModal] = useState(false);
 
   const handleCreateTestCase = async () => {
     if (!newTestCase.name.trim()) {
@@ -938,6 +880,22 @@ function ProjectDetailView({
     }
   };
 
+  const handleUpdateProject = async () => {
+    if (!newDate.completion_date.trim()) {
+      showError('Заполните поле даты');
+      return
+    }
+    try {
+      await apiClient.updateProject(newDate);
+      setShowUpdateProjectModal(false);
+      setNewDate(newDate)
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      showError('Ошибка при обновлении проекта');
+    }
+  };
+
   return (
     <>
       <div className="mb-6">
@@ -951,6 +909,59 @@ function ProjectDetailView({
         <h1 className="text-[26px] text-[#1e1e1e]">{project.name}</h1>
         <p className="text-[#6c757d]">Ответственный: {project.responsible_name}</p>
       </div>
+        <button
+          onClick={() => setShowUpdateProjectModal(true)}
+          className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+          title="Редактировать"
+        >
+          <Edit className="w-4 h-4" />
+        </button>
+      {/* Update Project Modal */}
+      {/* TODO: хз как это через такую форму сделать, тк класс проекта так не передать */}
+      {showUpdateProjectModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setShowUpdateProjectModal(false)}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">Обновление проекта</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2 text-[#2b2f33]">Срок выполнения (опционально)</label>
+              <input
+                type="date"
+                value={newDate.completion_date}
+                onChange={(e) => {
+                  setNewDate({
+                    ...newDate,
+                    completion_date: e.target.value
+                  });
+                }}
+                className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                placeholder="Введите дату"
+              />
+            </div>
+          </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowUpdateProjectModal(false)}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => handleUpdateProject()}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
+              >
+                Обновить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-[#e8e9ea]">

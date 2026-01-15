@@ -100,12 +100,12 @@
     - UI: Реализован в `TestSuiteManagement`
     - Backend: TODO - требуется `DELETE /test-suite`
 
-### Утверждение тест-планов
+<!-- ### Утверждение тест-планов
 24. **Утверждение тест-плана** ⚠️
     - UI: Модальное окно `ApproveRejectTestPlanModal` в `/components/Modals.tsx`
-    - Backend: TODO - требуется `POST /test-plan/approve`
+    - Backend: TODO - требуется `POST /test-plan/approve` -->
 
-25. **Возврат тест-плана с замечаниями** ⚠️
+<!-- 25. **Возврат тест-плана с замечаниями** ⚠️
     - UI: Модальное окно `ApproveRejectTestPlanModal` в `/components/Modals.tsx`
     - Backend: TODO - требуется `POST /test-plan/reject`
-    - Параметры: комментарии с замечаниями
+    - Параметры: комментарии с замечаниями -->
