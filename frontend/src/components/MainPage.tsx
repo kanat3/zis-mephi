@@ -720,7 +720,7 @@ function ProjectsView({
               <div>
                 <label className="block text-sm mb-2 text-[#2b2f33]">Срок выполнения (опционально)</label>
                 <input
-                  type="text"
+                  type="date"
                   value={newProject.completion_date}
                   onChange={(e) => setNewProject({ ...newProject, completion_date: e.target.value })}
                   className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
@@ -777,7 +777,7 @@ function ProjectDetailView({
 }) {
   const [activeTab, setActiveTab] = useState<'test-plans' | 'test-cases' | 'test-suites'>('test-plans');
   const [showNewTestCaseModal, setShowNewTestCaseModal] = useState(false);
-  const [newTestCase, setNewTestCase] = useState({ name: '', status: 'pending' });
+  const [newTestCase, setNewTestCase] = useState({ name: '', description: '' });
   const [showNewTestPlanModal, setShowNewTestPlanModal] = useState(false);
   const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
 
@@ -794,10 +794,10 @@ function ProjectDetailView({
       await apiClient.createTestCase({
         project_id: project.id,
         name: newTestCase.name,
-        status: newTestCase.status
+        description: newTestCase.description
       });
       setShowNewTestCaseModal(false);
-      setNewTestCase({ name: '', status: 'pending' });
+      setNewTestCase({ name: '', description: 'pending' });
       await reloadData();
     } catch (error) {
       console.error('Failed to create test case:', error);
@@ -1017,20 +1017,18 @@ function ProjectDetailView({
                   value={newTestCase.name}
                   onChange={(e) => setNewTestCase({ ...newTestCase, name: e.target.value })}
                   className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-                  placeholder="Введите название"
+                  placeholder="Введите название..."
                 />
               </div>
               <div>
-                <label className="block text-sm mb-2 text-[#2b2f33]">Статус</label>
-                <select
-                  value={newTestCase.status}
-                  onChange={(e) => setNewTestCase({ ...newTestCase, status: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-                >
-                  <option value="pending">Ожидает</option>
-                  <option value="passed">Пройден</option>
-                  <option value="failed">Провален</option>
-                </select>
+                <label className="block mb-2">Описание</label>
+                <textarea
+                  value={newTestCase.description}
+                  onChange={(e) => setNewTestCase({...newTestCase, description: e.target.value})}
+                  placeholder="Введите описание тест-кейса..."
+                  className="w-full px-4 py-2.5 border border-[#f1d6df] rounded-lg"
+                  rows={3}
+                />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
