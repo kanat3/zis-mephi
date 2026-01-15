@@ -414,19 +414,8 @@ func setProjectCompletionDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "id parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
 	var data struct {
+		ID             int    `json:"id"`
 		CompletionDate string `json:"completion_date"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -434,7 +423,7 @@ func setProjectCompletionDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("UPDATE projects SET completion_date = $1 WHERE id = $2", data.CompletionDate, id)
+	_, err := db.Exec("UPDATE projects SET completion_date = $1 WHERE id = $2", data.CompletionDate, data.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -448,19 +437,8 @@ func setProjectDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "id parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
 	var data struct {
+		ID          int    `json:"int"`
 		Description string `json:"description"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -468,7 +446,7 @@ func setProjectDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("UPDATE projects SET description = $1 WHERE id = $2", data.Description, id)
+	_, err := db.Exec("UPDATE projects SET description = $1 WHERE id = $2", data.Description, data.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -714,19 +692,8 @@ func setTestCaseDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "id parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
 	var data struct {
+		ID          int    `json:"id"`
 		Description string `json:"description"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -734,7 +701,7 @@ func setTestCaseDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("UPDATE test_cases SET description = $1 WHERE id = $2", data.Description, id)
+	_, err := db.Exec("UPDATE test_cases SET description = $1 WHERE id = $2", data.Description, data.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -861,19 +828,8 @@ func setTestPlanDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "id parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
 	var data struct {
+		ID          int    `json:"id"`
 		Description string `json:"description"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -881,7 +837,7 @@ func setTestPlanDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("UPDATE test_plans SET description = $1 WHERE id = $2", data.Description, id)
+	_, err := db.Exec("UPDATE test_plans SET description = $1 WHERE id = $2", data.Description, data.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1068,19 +1024,8 @@ func setTestSuiteDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		http.Error(w, "id parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
 	var data struct {
+		ID          int    `json:"id"`
 		Description string `json:"description"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -1088,7 +1033,7 @@ func setTestSuiteDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("UPDATE test_suites SET description = $1 WHERE id = $2", data.Description, id)
+	_, err := db.Exec("UPDATE test_suites SET description = $1 WHERE id = $2", data.Description, data.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
