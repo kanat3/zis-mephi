@@ -263,7 +263,7 @@ class ApiClient {
     return this.request<TestPlan>(`/test-plan?id=${id}`);
   }
 
-  async createTestPlan(data: { project_id: number; name: string; goal: string; deadline?: string }): Promise<{ id: number }> {
+  async createTestPlan(data: { project_id: number; name: string; description: string; deadline?: string }): Promise<{ id: number }> {
     return this.request<{ id: number }>('/test-plan', {
       method: 'POST',
       body: JSON.stringify(data),

@@ -792,7 +792,7 @@ function ProjectDetailView({
   const [showNewTestCaseModal, setShowNewTestCaseModal] = useState(false);
   const [newTestCase, setNewTestCase] = useState({ name: '', description: '', data: '' });
   const [showNewTestPlanModal, setShowNewTestPlanModal] = useState(false);
-  const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
+  const [newTestPlan, setNewTestPlan] = useState({ name: '', description: '', deadline: '' });
   const [showNewTestSuiteModal, setShowNewTestSuiteModal] = useState(false);
   const [newTestSuite, setNewTestSuite] = useState({ name: '', description: '', date: ''});
   const [newProjectUpdate, setNewProjectUpdate] = useState({ id: project.id, completion_date: '', description: '' });
@@ -903,7 +903,7 @@ function ProjectDetailView({
   };
 
   const handleCreateTestPlan = async () => {
-    if (!newTestPlan.name.trim() || !newTestPlan.goal.trim()) {
+    if (!newTestPlan.name.trim() || !newTestPlan.description.trim()) {
       showError('Заполните все обязательные поля');
       return;
     }
@@ -912,11 +912,11 @@ function ProjectDetailView({
       await apiClient.createTestPlan({
         project_id: project.id,
         name: newTestPlan.name,
-        goal: newTestPlan.goal,
+        description: newTestPlan.description,
         deadline: newTestPlan.deadline || undefined
       });
       setShowNewTestPlanModal(false);
-      setNewTestPlan({ name: '', goal: '', deadline: '' });
+      setNewTestPlan({ name: '', description: '', deadline: '' });
       await reloadData();
     } catch (error) {
       console.error('Failed to create test plan:', error);
@@ -1263,7 +1263,7 @@ function ProjectDetailView({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-2 text-[#2b2f33]">
-                  Описание (цель)
+                  Описание
                 </label>
                 <textarea
                   value={editDescription}
@@ -1517,10 +1517,10 @@ function ProjectDetailView({
                 />
               </div>
               <div>
-                <label className="block text-sm mb-2 text-[#2b2f33]">Цель</label>
+                <label className="block text-sm mb-2 text-[#2b2f33]">Описание</label>
                 <textarea
-                  value={newTestPlan.goal}
-                  onChange={(e) => setNewTestPlan({ ...newTestPlan, goal: e.target.value })}
+                  value={newTestPlan.description}
+                  onChange={(e) => setNewTestPlan({ ...newTestPlan, description: e.target.value })}
                   className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
                   placeholder="Опишите цель тест-плана"
                   rows={3}
