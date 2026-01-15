@@ -438,7 +438,7 @@ func setProjectDescriptionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data struct {
-		ID          int    `json:"int"`
+		ID          int    `json:"id"`
 		Description string `json:"description"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
