@@ -224,7 +224,7 @@ class ApiClient {
     return this.request<TestCase>(`/test-case?id=${id}`);
   }
 
-  async createTestCase(data: { project_id: number; name: string; description: string }): Promise<{ id: number }> {
+  async createTestCase(data: { project_id: number; name: string; description: string, data: string }): Promise<{ id: number }> {
     return this.request<{ id: number }>('/test-case', {
       method: 'POST',
       body: JSON.stringify(data),

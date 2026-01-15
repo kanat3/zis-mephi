@@ -289,7 +289,7 @@ export function MainPage({ onLogout }: MainPageProps) {
           />
         )}
         {activeTab === 'requirements' && <RequirementsView requirementsData={requirementsData} setRequirementsData={setRequirementsData} showError={showError} />}
-        {activeTab === 'reports' && <ReportsView showError={showError} testReportsData={testReportsData} projectsData={projectsData} testPlansData={testPlansData} testSuitesData={testSuitesData} />}
+        {activeTab === 'reports' && <ReportsView showError={showError} testReportsData={testReportsData} projectsData={projectsData} testPlansData={testPlansData} testSuitesData={testSuitesData}  reloadData={loadData}/>}
         {activeTab === 'testing' && (
           <TestingView
             selectedTestSuite={selectedTestSuite}
@@ -776,7 +776,7 @@ function ProjectDetailView({
 }) {
   const [activeTab, setActiveTab] = useState<'test-plans' | 'test-cases' | 'test-suites'>('test-plans');
   const [showNewTestCaseModal, setShowNewTestCaseModal] = useState(false);
-  const [newTestCase, setNewTestCase] = useState({ name: '', description: '' });
+  const [newTestCase, setNewTestCase] = useState({ name: '', description: '', data: '' });
   const [showNewTestPlanModal, setShowNewTestPlanModal] = useState(false);
   const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
   const [showNewTestSuiteModal, setShowNewTestSuiteModal] = useState(false);
@@ -798,10 +798,11 @@ function ProjectDetailView({
       await apiClient.createTestCase({
         project_id: project.id,
         name: newTestCase.name,
-        description: newTestCase.description
+        description: newTestCase.description,
+        data: newTestCase.data
       });
       setShowNewTestCaseModal(false);
-      setNewTestCase({ name: '', description: 'pending' });
+      setNewTestCase({ name: '', description: 'pending', data: '' });
       await reloadData();
     } catch (error) {
       console.error('Failed to create test case:', error);
@@ -1150,6 +1151,16 @@ function ProjectDetailView({
                   rows={3}
                 />
               </div>
+              <div>
+                  <label className="block text-sm mb-2 text-[#2b2f33]">Данные тест-кейса (опционально)</label>
+                  <input
+                    type="text"
+                    value={newTestCase.data}
+                    onChange={(e) => setNewTestCase({ ...newTestCase, data: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                    placeholder="Введите название..."
+                  />
+                </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button
