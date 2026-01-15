@@ -57,6 +57,7 @@ export interface TestPlan {
   project_id: number;
   name: string;
   goal: string;
+  description: string;
   deadline?: string;
   created_at: string;
   // Extended fields (not in backend yet)
@@ -326,62 +327,38 @@ class ApiClient {
     });
   }
 
-  // TODO: Backend - Implement PUT /test-case endpoint  
-  async updateTestCase(id: number, data: { name?: string; status?: string; description?: string; steps?: string; expected_result?: string }): Promise<void> {
-    throw new Error('TODO: Backend needs to implement PUT /test-case endpoint');
-    // return this.request<void>(`/test-case?id=${id}`, {
-    //   method: 'PUT',
-    //   body: JSON.stringify(data),
-    // });
+  async updateTestCase(data: { id: number, description?: string }):  Promise<{ id: number }> {
+    return this.request<{ id: number }>(`/test-case/set-description`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
-  // TODO: Backend - Implement PUT /test-plan endpoint
-  async updateTestPlan(id: number, data: { name?: string; goal?: string; deadline?: string }): Promise<void> {
-    throw new Error('TODO: Backend needs to implement PUT /test-plan endpoint');
-    // return this.request<void>(`/test-plan?id=${id}`, {
-    //   method: 'PUT',
-    //   body: JSON.stringify(data),
-    // });
+  async updateTestPlan(data: { id: number; description?: string }): Promise<{ id: number }> {
+    return this.request<{ id: number }>(`/test-plan/set-description`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
-  // TODO: Backend - Implement test plan approval endpoints
-  async approveTestPlan(id: number): Promise<void> {
-    throw new Error('TODO: Backend needs to implement POST /test-plan/approve endpoint');
-    // return this.request<void>(`/test-plan/approve?id=${id}`, {
-    //   method: 'POST',
-    // });
-  }
-
-  async rejectTestPlan(id: number, comments: string): Promise<void> {
-    throw new Error('TODO: Backend needs to implement POST /test-plan/reject endpoint');
-    // return this.request<void>(`/test-plan/reject?id=${id}`, {
-    //   method: 'POST',
-    //   body: JSON.stringify({ comments }),
-    // });
-  }
-
-  // TODO: Backend - Implement test suite CRUD endpoints
   async createTestSuite(data: { name: string; description?: string }): Promise<{ id: number }> {
-    throw new Error('TODO: Backend needs to implement POST /test-suite endpoint');
-    // return this.request<{ id: number }>('/test-suite', {
-    //   method: 'POST',
-    //   body: JSON.stringify(data),
-    // });
+    return this.request<{ id: number }>('/test-suite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
-  async updateTestSuite(id: number, data: { name?: string; description?: string }): Promise<void> {
-    throw new Error('TODO: Backend needs to implement PUT /test-suite endpoint');
-    // return this.request<void>(`/test-suite?id=${id}`, {
-    //   method: 'PUT',
-    //   body: JSON.stringify(data),
-    // });
+  async updateTestSuite(data: { id: number; description?: string }): Promise<{ id: number }> {
+    return this.request<{ id: number }>(`/test-suite/set-description`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async deleteTestSuite(id: number): Promise<void> {
-    throw new Error('TODO: Backend needs to implement DELETE /test-suite endpoint');
-    // return this.request<void>(`/test-suite?id=${id}`, {
-    //   method: 'DELETE',
-    // });
+    return this.request<void>(`/test-suite?id=${id}`, {
+      method: 'DELETE',
+    });
   }
 
   // TODO: Backend - Implement test report management endpoints

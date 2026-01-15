@@ -794,8 +794,15 @@ function ProjectDetailView({
   const [showNewTestPlanModal, setShowNewTestPlanModal] = useState(false);
   const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
   const [showNewTestSuiteModal, setShowNewTestSuiteModal] = useState(false);
-  const [newTestSuite, setNewTestSuite] = useState({ name: '' });
+  const [newTestSuite, setNewTestSuite] = useState({ name: '', description: '', date: ''});
   const [newProjectUpdate, setNewProjectUpdate] = useState({ id: project.id, completion_date: '', description: '' });
+
+  // Состояния для редактирования
+  const [editTestPlanModal, setEditTestPlanModal] = useState<{show: boolean; testPlan: TestPlan | null}>({show: false, testPlan: null});
+  const [editTestCaseModal, setEditTestCaseModal] = useState<{show: boolean; testCase: TestCase | null}>({show: false, testCase: null});
+  const [editTestSuiteModal, setEditTestSuiteModal] = useState<{show: boolean; testSuite: TestSuite | null}>({show: false, testSuite: null});
+  
+  const [editDescription, setEditDescription] = useState('');
 
   const projectTestCases = testCasesData.filter(tc => tc.project_id === project.id);
   const projectTestPlans = testPlansData.filter(tp => tp.project_id === project.id);
@@ -821,6 +828,57 @@ function ProjectDetailView({
     } catch (error) {
       console.error('Failed to create test case:', error);
       showError('Ошибка при создании тест-кейса');
+    }
+  };
+
+  const handleUpdateTestCase = async () => {
+    if (!editTestCaseModal.testCase) return;
+    
+    try {
+      await apiClient.updateTestCase({ 
+        id: editTestCaseModal.testCase.id, 
+        description: editDescription 
+      });
+      setEditTestCaseModal({show: false, testCase: null});
+      setEditDescription('');
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to update test case:', error);
+      showError('Ошибка при обновлении тест-кейса');
+    }
+  };
+
+  const handleUpdateTestPlan = async () => {
+    if (!editTestPlanModal.testPlan) return;
+    
+    try {
+      await apiClient.updateTestPlan({ 
+        id: editTestPlanModal.testPlan.id, 
+        description: editDescription 
+      });
+      setEditTestPlanModal({show: false, testPlan: null});
+      setEditDescription('');
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to update test plan:', error);
+      showError('Ошибка при обновлении тест-плана');
+    }
+  };
+
+  const handleUpdateTestSuite = async () => {
+    if (!editTestSuiteModal.testSuite) return;
+    
+    try {
+      await apiClient.updateTestSuite({ 
+        id: editTestSuiteModal.testSuite.id, 
+        description: editDescription 
+      });
+      setEditTestSuiteModal({show: false, testSuite: null});
+      setEditDescription('');
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to update test suite:', error);
+      showError('Ошибка при обновлении тестового набора');
     }
   };
 
@@ -875,9 +933,10 @@ function ProjectDetailView({
     try {
       await apiClient.createTestSuite({
         name: newTestSuite.name,
+        description: newTestSuite.description
       });
       setShowNewTestSuiteModal(false);
-      setNewTestSuite({ name: ''});
+      setNewTestSuite({ name: '', description: '', date: ''});
       await reloadData();
     } catch (error) {
       console.error('Failed to create test plan:', error);
@@ -928,9 +987,8 @@ function ProjectDetailView({
         <button
           onClick={() => setShowUpdateProjectModal(true)}
           className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-          title="Редактировать"
         >
-          <Edit className="w-4 h-4" />
+          <Edit className="w-4 h-4"/>
         </button>
       {/* Update Project Modal */}
       {/* TODO: хз как это через такую форму сделать, тк класс проекта так не передать */}
@@ -1049,19 +1107,31 @@ function ProjectDetailView({
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-[#f19fb5] mb-1">{plan.name}</h3>
-                    <p className="text-sm text-[#6c757d]">Описание: {plan.goal}</p>
+                    <p className="text-sm text-[#6c757d]">Описание: {plan.description}</p>
                     {plan.deadline && (
                       <p className="text-sm text-[#6c757d] mt-1">
                         Дедлайн: {new Date(plan.deadline).toLocaleDateString('ru-RU')}
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleDeleteTestPlan(plan.id)}
-                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        setEditTestPlanModal({show: true, testPlan: plan});
+                        setEditDescription(plan.description);
+                      }}
+                      className="p-2 text-[#6c757d] hover:text-[#f19fb5] hover:bg-[#ffd7db] rounded-lg transition-all"
+                      title="Редактировать описание"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTestPlan(plan.id)}
+                      className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1094,13 +1164,26 @@ function ProjectDetailView({
                   <div className="flex-1">
                     <h3 className="text-[#f19fb5] mb-2">{testCase.name}</h3>
                     <TestStatusBadge status={testCase.status} />
+                    <p className="text-sm text-[#6c757d] mt-1">Описание: {testCase.description}</p>
                   </div>
-                  <button
-                    onClick={() => handleDeleteTestCase(testCase.id)}
-                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        setEditTestCaseModal({show: true, testCase: testCase});
+                        setEditDescription(testCase.description!);
+                      }}
+                      className="p-2 text-[#6c757d] hover:text-[#f19fb5] hover:bg-[#ffd7db] rounded-lg transition-all"
+                      title="Редактировать описание"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTestCase(testCase.id)}
+                      className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1132,13 +1215,26 @@ function ProjectDetailView({
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h5 className="text-[#6c757d] mb-2">{testSuite.name}</h5>
+                    <h5 className="text-[#6c757d] mb-2">Описание: {testSuite.description}</h5>
                   </div>
-                  <button
-                    onClick={() => handleDeleteTestSuite(testSuite.id)}
-                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        setEditTestSuiteModal({show: true, testSuite: testSuite});
+                        setEditDescription(testSuite.description!);
+                      }}
+                      className="p-2 text-[#6c757d] hover:text-[#f19fb5] hover:bg-[#ffd7db] rounded-lg transition-all"
+                      title="Редактировать описание"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTestSuite(testSuite.id)}
+                      className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1147,6 +1243,141 @@ function ProjectDetailView({
                 Нет тестовых планов
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно редактирования тест-плана */}
+      {editTestPlanModal.show && editTestPlanModal.testPlan && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setEditTestPlanModal({show: false, testPlan: null})}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">
+              Редактировать описание тест-плана
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Описание (цель)
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите описание тест-плана"
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditTestPlanModal({show: false, testPlan: null})}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleUpdateTestPlan}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно редактирования тест-кейса */}
+      {editTestCaseModal.show && editTestCaseModal.testCase && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setEditTestCaseModal({show: false, testCase: null})}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">
+              Редактировать описание тест-кейса
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Описание
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите описание тест-кейса"
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditTestCaseModal({show: false, testCase: null})}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleUpdateTestCase}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно редактирования тестового набора */}
+      {editTestSuiteModal.show && editTestSuiteModal.testSuite && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setEditTestSuiteModal({show: false, testSuite: null})}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">
+              Редактировать описание тестового набора
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Описание
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите описание тестового набора"
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditTestSuiteModal({show: false, testSuite: null})}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleUpdateTestSuite}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
+              >
+                Сохранить
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1235,6 +1466,16 @@ function ProjectDetailView({
                 />
               </div>
             </div>
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">Описание (опционально)</label>
+                <input
+                  type="text"
+                  value={newTestSuite.description}
+                  onChange={(e) => setNewTestSuite({ ...newTestSuite, description: e.target.value})}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите описание..."
+                />
+              </div>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowNewTestSuiteModal(false)}
