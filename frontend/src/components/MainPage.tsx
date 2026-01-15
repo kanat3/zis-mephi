@@ -1704,7 +1704,7 @@ function ReportsView({
     }
 
     try {
-      await apiClient.deleteTestReport(report.id);
+      // await apiClient.deleteTestReport(report.id);
       await reloadData();
     } catch (error) {
       console.error('Failed to delete report:', error);
