@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"zis/internal/config"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
@@ -129,19 +130,45 @@ var (
 )
 
 func initDB() error {
-	port := "5432"
+
+	cfg := config.GetConfig()
+	port := cfg.Database.Port
 
 	if *integration != "" {
 		port = "5433"
 	}
 
-	connStr := fmt.Sprintf("host=localhost port=%s user=postgres password=postgres dbname=postgres sslmode=disable", port)
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Database.Host, port, cfg.Database.User, cfg.Database.Password, cfg.Database.DBname)
+
+	fmt.Print((connStr))
 	var err error
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		return err
 	}
 	return db.Ping()
+}
+
+func getStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"ok"}`))
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func runMigrations() error {
