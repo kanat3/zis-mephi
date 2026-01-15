@@ -1102,17 +1102,17 @@ func getRequirementsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectIDStr := r.URL.Query().Get("project_id")
-	projectID, err := strconv.Atoi(projectIDStr)
-	if err != nil {
-		http.Error(w, "Invalid project_id", http.StatusBadRequest)
-		return
-	}
-
 	if *integration != "" {
+		projectIDStr := r.URL.Query().Get("project_id")
+		projectID, err := strconv.Atoi(projectIDStr)
+		if err != nil {
+			http.Error(w, "Invalid project_id", http.StatusBadRequest)
+			return
+		}
+
 		var rodikProjectID uuid.UUID
 
-		err := db.QueryRow("SELECT rodik_project_id FROM projects WHERE id = $1", projectID).Scan(&rodikProjectID)
+		err = db.QueryRow("SELECT rodik_project_id FROM projects WHERE id = $1", projectID).Scan(&rodikProjectID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
