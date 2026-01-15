@@ -974,7 +974,7 @@ function ProjectDetailView({
                   });
                 }}
                 className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-                placeholder="Введите дату"
+                placeholder="Введите описание"
               />
             </div>
           </div>
