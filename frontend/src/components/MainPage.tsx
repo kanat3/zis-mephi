@@ -67,14 +67,6 @@ export function MainPage({ onLogout }: MainPageProps) {
     }, 1500);
   };
 
-  const handleRunTests = () => {
-    if (!selectedTestSuite) {
-      showError('Выберите тестовый набор');
-      return;
-    }
-    showError('Тестирование запущено!', 'success');
-  };
-
   const loadData = async () => {
     setLoading(true);
     try {
@@ -299,18 +291,14 @@ export function MainPage({ onLogout }: MainPageProps) {
             handleRunTests={async (projectId: number, testPlanId: number, testSuiteId: number) => {
               try {
                 showError('Запуск тестов...', 'success');
-                // Реализуйте здесь логику запуска тестов
                 const result = await apiClient.runTests({
                   project_id: projectId,
                   test_plan_id: testPlanId,
                   test_suite_id: testSuiteId
                 });
-                showError('Тесты запущены успешно!', 'success');
-                // Обновить данные после запуска тестов
                 await loadData();
               } catch (error) {
                 console.error('Failed to run tests:', error);
-                showError('Ошибка при запуске тестов');
               }
             }}
             showError={showError}
@@ -927,11 +915,11 @@ function ProjectDetailView({
       await apiClient.createTestPlan({
         project_id: project.id,
         name: newTestPlan.name,
-        goal: newTestPlan.goal,
+        description: newTestPlan.description,
         deadline: newTestPlan.deadline || undefined
       });
       setShowNewTestPlanModal(false);
-      setNewTestPlan({ name: '', goal: '', deadline: '' });
+      setNewTestPlan({ name: '', description: '', deadline: '' });
       await reloadData();
     } catch (error) {
       console.error('Failed to create test plan:', error);
@@ -1994,9 +1982,18 @@ function TestingView({
           )}
         </div>
 
-        {/* Кнопка запуска */}
         <button
-          onClick={handleRun}
+          onClick={() => {
+            if (!selectedProjectObj || !selectedPlanObj || !selectedTestSuiteObj) {
+              showError('Выберите проект, тест-план и тестовый набор');
+              return;
+            }
+            if (!selectedProjectObj.id || !selectedPlanObj.id || !selectedTestSuiteObj.id) {
+              showError('Ошибка: у одного из выбранных элементов отсутствует ID');
+              return;
+            }
+            handleRunTests(selectedProjectObj.id, selectedPlanObj.id, selectedTestSuiteObj.id);
+          }}
           disabled={!selectedProject || !selectedPlan || !selectedTestSuite}
           className="w-full px-6 py-3 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
