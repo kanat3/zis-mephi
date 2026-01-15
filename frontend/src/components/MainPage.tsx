@@ -801,7 +801,7 @@ function ProjectDetailView({
   const [editTestPlanModal, setEditTestPlanModal] = useState<{show: boolean; testPlan: TestPlan | null}>({show: false, testPlan: null});
   const [editTestCaseModal, setEditTestCaseModal] = useState<{show: boolean; testCase: TestCase | null}>({show: false, testCase: null});
   const [editTestSuiteModal, setEditTestSuiteModal] = useState<{show: boolean; testSuite: TestSuite | null}>({show: false, testSuite: null});
-  
+
   const [editDescription, setEditDescription] = useState('');
 
   const projectTestCases = testCasesData.filter(tc => tc.project_id === project.id);
@@ -833,11 +833,11 @@ function ProjectDetailView({
 
   const handleUpdateTestCase = async () => {
     if (!editTestCaseModal.testCase) return;
-    
+
     try {
-      await apiClient.updateTestCase({ 
-        id: editTestCaseModal.testCase.id, 
-        description: editDescription 
+      await apiClient.updateTestCase({
+        id: editTestCaseModal.testCase.id,
+        description: editDescription
       });
       setEditTestCaseModal({show: false, testCase: null});
       setEditDescription('');
@@ -850,11 +850,11 @@ function ProjectDetailView({
 
   const handleUpdateTestPlan = async () => {
     if (!editTestPlanModal.testPlan) return;
-    
+
     try {
-      await apiClient.updateTestPlan({ 
-        id: editTestPlanModal.testPlan.id, 
-        description: editDescription 
+      await apiClient.updateTestPlan({
+        id: editTestPlanModal.testPlan.id,
+        description: editDescription
       });
       setEditTestPlanModal({show: false, testPlan: null});
       setEditDescription('');
@@ -867,11 +867,11 @@ function ProjectDetailView({
 
   const handleUpdateTestSuite = async () => {
     if (!editTestSuiteModal.testSuite) return;
-    
+
     try {
-      await apiClient.updateTestSuite({ 
-        id: editTestSuiteModal.testSuite.id, 
-        description: editDescription 
+      await apiClient.updateTestSuite({
+        id: editTestSuiteModal.testSuite.id,
+        description: editDescription
       });
       setEditTestSuiteModal({show: false, testSuite: null});
       setEditDescription('');
@@ -912,11 +912,11 @@ function ProjectDetailView({
       await apiClient.createTestPlan({
         project_id: project.id,
         name: newTestPlan.name,
-        description: newTestPlan.description,
+        goal: newTestPlan.goal,
         deadline: newTestPlan.deadline || undefined
       });
       setShowNewTestPlanModal(false);
-      setNewTestPlan({ name: '', description: '', deadline: '' });
+      setNewTestPlan({ name: '', goal: '', deadline: '' });
       await reloadData();
     } catch (error) {
       console.error('Failed to create test plan:', error);
@@ -1631,49 +1631,30 @@ function RequirementsView({
   setRequirementsData: (data: Requirement[]) => void;
   showError: (msg: string, type?: 'error' | 'success') => void;
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredRequirements = requirementsData.filter(req =>
-    req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    req.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <>
-      <div className="mb-6">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-[26px] text-[#1e1e1e]">Требования</h1>
-        <p className="text-[#6c757d]">Управление требованиями к системе</p>
       </div>
 
-      <div className="mb-4">
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6c757d]" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Поиск требований..."
-            className="w-full pl-10 pr-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {filteredRequirements.map((req) => (
-          <div key={req.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="text-[#f19fb5] mb-2">REQ-{req.id}: {req.name}</h3>
-                <p className="text-sm text-[#6c757d]">{req.description}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-        {filteredRequirements.length === 0 && (
-          <div className="text-center text-[#6c757d] py-12">
-            {searchQuery ? 'Требования не найдены' : 'Нет требований'}
-          </div>
-        )}
+      <div className="bg-white border border-[#f1d6df] rounded-lg overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-[#fff6fb]">
+              <th className="text-left py-3 px-4 text-[#444]">Название</th>
+              <th className="text-left py-3 px-4 text-[#444]">Описание</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requirementsData.map((req) => (
+              <tr key={req.id} className="border-b border-[#f1d6df] last:border-b-0 hover:bg-[#fffafc]">
+                <td className="py-3 px-4">{req.name}</td>
+                <td className="py-3 px-4">{req.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );
