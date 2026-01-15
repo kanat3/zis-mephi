@@ -1299,6 +1299,7 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/login", loginHandler).Methods("POST")
+	r.HandleFunc("/status", getStatus).Methods("GET")
 
 	r.HandleFunc("/projects", getProjectsHandler).Methods("GET")
 	r.HandleFunc("/project", getProjectHandler).Methods("GET")

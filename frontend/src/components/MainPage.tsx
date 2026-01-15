@@ -515,7 +515,8 @@ function ProjectsView({
   const [newProject, setNewProject] = useState({
     name: '',
     responsible_name: currentUser.name,
-    completion_date: ''
+    completion_date: '',
+    description: ''
   });
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -542,7 +543,7 @@ function ProjectsView({
     try {
       await apiClient.createProject(newProject);
       setShowNewProjectModal(false);
-      setNewProject({ name: '', responsible_name: currentUser.name , completion_date: ''});
+      setNewProject({ name: '', responsible_name: currentUser.name , completion_date: '', description: ''});
       await reloadData();
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -657,6 +658,7 @@ function ProjectsView({
                 <div className="flex-1">
                   <h3 className="text-lg text-[#f19fb5] mb-1">{project.name}</h3>
                   <p className="text-sm text-[#6c757d]">Создан: {project.responsible_name}</p>
+                  <p className="text-sm text-[#6c757d]">Описание: {project.description}</p>
                   {project.completion_date && (
                     <p className="text-sm text-[#6c757d]">Срок выполнения: {new Date(project.completion_date).toLocaleDateString('ru-RU')}</p>
                   )}
@@ -726,6 +728,18 @@ function ProjectsView({
                   placeholder="Введите дату"
                 />
               </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">Описание проекта (опционально)</label>
+                <input
+                  type="text"
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите описание"
+                />
+              </div>
+            </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button
@@ -781,7 +795,7 @@ function ProjectDetailView({
   const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
   const [showNewTestSuiteModal, setShowNewTestSuiteModal] = useState(false);
   const [newTestSuite, setNewTestSuite] = useState({ name: '' });
-  const [newDate, setNewDate] = useState({ completion_date: '' });
+  const [newProjectUpdate, setNewProjectUpdate] = useState({ id: project.id, completion_date: '', description: '' });
 
   const projectTestCases = testCasesData.filter(tc => tc.project_id === project.id);
   const projectTestPlans = testPlansData.filter(tp => tp.project_id === project.id);
@@ -882,17 +896,18 @@ function ProjectDetailView({
   };
 
   const handleUpdateProject = async () => {
-    if (!newDate.completion_date.trim()) {
+    if (!newProjectUpdate.completion_date.trim()) {
       showError('Заполните поле даты');
       return
     }
     try {
-      await apiClient.updateProject(newDate);
+      await apiClient.updateProjectDate({ id: newProjectUpdate.id, completion_date: newProjectUpdate.completion_date });
+      await apiClient.updateProjectDescription({ id: newProjectUpdate.id, description: newProjectUpdate.description });
       setShowUpdateProjectModal(false);
-      setNewDate(newDate)
+      setNewProjectUpdate(newProjectUpdate)
       await reloadData();
     } catch (error) {
-      console.error('Failed to create project:', error);
+      console.error('Failed to update project:', error);
       showError('Ошибка при обновлении проекта');
     }
   };
@@ -931,14 +946,31 @@ function ProjectDetailView({
             <h2 className="text-xl text-[#f19fb5] mb-6">Обновление проекта</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm mb-2 text-[#2b2f33]">Срок выполнения (опционально)</label>
+              <label className="block text-sm mb-2 text-[#2b2f33]">Срок выполнения</label>
               <input
                 type="date"
-                value={newDate.completion_date}
+                value={newProjectUpdate.completion_date}
                 onChange={(e) => {
-                  setNewDate({
-                    ...newDate,
+                  setNewProjectUpdate({
+                    ...newProjectUpdate,
                     completion_date: e.target.value
+                  });
+                }}
+                className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                placeholder="Введите дату"
+              />
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2 text-[#2b2f33]">Описание (опционально)</label>
+              <input
+                type="text"
+                value={newProjectUpdate.description}
+                onChange={(e) => {
+                  setNewProjectUpdate({
+                    ...newProjectUpdate,
+                    description: e.target.value
                   });
                 }}
                 className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"

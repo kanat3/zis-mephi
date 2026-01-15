@@ -23,6 +23,7 @@ export interface LoginResponse {
 export interface Project {
   id: number;
   name: string;
+  description: string;
   responsible_name: string;
   status: string;
   completion_date?: string;
@@ -309,8 +310,15 @@ class ApiClient {
     return this.request<TestReport[]>('/test-reports');
   }
 
-  async updateProject(data: { completion_date: string}): Promise<{ id: number }> {
+  async updateProjectDate(data: { id: number, completion_date: string}): Promise<{ id: number }> {
     return this.request<{ id: number }>('/project/set-completion-date', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateProjectDescription(data: { id: number, description: string}): Promise<{ id: number }> {
+    return this.request<{ id: number }>('/project/set-description', {
       method: 'POST',
       body: JSON.stringify(data),
     });
