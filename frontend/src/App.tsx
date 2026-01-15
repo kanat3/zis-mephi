@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TestLaunchPage } from './components/TestLaunchPageNew';
+import { MainPage } from './components/MainPage';
 import { LoginPage } from './components/LoginPage';
 import { TokenManager } from './services/api';
 
@@ -40,5 +40,5 @@ export default function App() {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
-  return <TestLaunchPage onLogout={handleLogout} />;
+  return <MainPage onLogout={handleLogout} />;
 }

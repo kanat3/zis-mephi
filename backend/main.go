@@ -256,14 +256,10 @@ func getProjectsHandler(w http.ResponseWriter, r *http.Request) {
 	var projects []Project
 	for rows.Next() {
 		var p Project
-		var completionDate sql.NullString
-		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, &completionDate, &p.IsArchived, &p.CreatedAt)
+		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, &p.CompletionDate, &p.IsArchived, &p.CreatedAt)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-		if completionDate.Valid {
-			p.CompletionDate = &completionDate.String
 		}
 		projects = append(projects, p)
 	}
@@ -316,11 +312,15 @@ func createProjectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	completionDate := time.Now().Add(2 * 7 * 24 * time.Hour)
+	if *p.CompletionDate == "" {
+		futureDate := time.Now().Add(2 * 7 * 24 * time.Hour)
+		data := futureDate.Format(time.RFC1123)
+		*p.CompletionDate = data
+	}
 
 	var id int
 	err := db.QueryRow("INSERT INTO projects (name, description, responsible_name, completion_date) VALUES ($1, $2, $3, $4) RETURNING id",
-		p.Name, p.Description, p.ResponsibleName, completionDate).Scan(&id)
+		p.Name, p.Description, p.ResponsibleName, p.completionDate).Scan(&id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

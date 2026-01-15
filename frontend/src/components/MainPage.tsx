@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import {
   HelpCircle, PlayCircle, FileText, BarChart3,
   Rocket, FolderOpen, ClipboardList, Undo2, Plus, Edit, Trash2,
-  LogOut, Archive, Upload, Search, Download, X, AlertCircle, CheckCircle, Link, Settings
+  LogOut, User, Archive, Upload, Search, Download, X, AlertCircle, CheckCircle, Link, Settings
 } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { apiClient, TokenManager } from '../services/api';
-import type { User, Project, Requirement, TestCase, TestPlan, TestSuite, TestReport } from '../services/api.ts';
+import { apiClient, TokenManager } from '../services/api.ts';
+import type { User as UserType, Project, Requirement, TestCase, TestPlan, TestSuite, TestReport } from '../services/api.ts';
 import {
   safeNumber,
   safeString,
@@ -17,11 +16,11 @@ import {
   safeGet
 } from './utils/dataHelpers.ts';
 
-interface TestLaunchPageProps {
+interface MainPageProps {
   onLogout: () => void;
 }
 
-export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
+export function MainPage({ onLogout }: MainPageProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'archived-projects' | 'requirements' | 'reports' | 'testing' | 'profile' | 'settings'>('dashboard');
   const [selectedPlan, setSelectedPlan] = useState('integration');
   const [showHelp, setShowHelp] = useState(false);
@@ -29,20 +28,14 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
   const [history, setHistory] = useState<string[]>(['dashboard']);
   const [errorModal, setErrorModal] = useState<{ show: boolean; message: string; type: 'error' | 'success' }>({ show: false, message: '', type: 'error' });
   const [selectedTestSuite, setSelectedTestSuite] = useState('');
-
   const [projectsData, setProjectsData] = useState<Project[]>([]);
   const [requirementsData, setRequirementsData] = useState<Requirement[]>([]);
   const [testCasesData, setTestCasesData] = useState<TestCase[]>([]);
   const [testSuitesData, setTestSuitesData] = useState<TestSuite[]>([]);
   const [testPlansData, setTestPlansData] = useState<TestPlan[]>([]);
   const [testReportsData, setTestReportsData] = useState<TestReport[]>([]);
-
-  const [currentUser, setCurrentUser] = useState<User | null>(TokenManager.getUser());
+  const [currentUser, setCurrentUser] = useState<UserType | null>(TokenManager.getUser());
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const showNotification = (message: string) => {
     setNotification(message);
@@ -59,7 +52,7 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
   };
 
   const goBack = () => {
-    if (history.length > 1) {
+    if (history?.length > 1) {
       const newHistory = [...history];
       newHistory.pop();
       const previousTab = newHistory[newHistory.length - 1] as typeof activeTab;
@@ -86,11 +79,11 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
     setLoading(true);
     try {
       const [projects, requirements, testPlans, testSuites, reports] = await Promise.all([
-        apiClient.getProjects().catch(() => [] as Project[]),
-        apiClient.getRequirements().catch(() => [] as Requirement[]),
-        apiClient.getTestPlans().catch(() => [] as TestPlan[]),
-        apiClient.getTestSuites().catch(() => [] as TestSuite[]),
-        apiClient.getTestReports().catch(() => [] as TestReport[])
+        apiClient.getProjects(),
+        apiClient.getRequirements(),
+        apiClient.getTestPlans(),
+        apiClient.getTestSuites(),
+        apiClient.getTestReports()
       ]);
 
       setProjectsData(safeArray<Project>(projects));
@@ -99,20 +92,18 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
       setTestSuitesData(safeArray<TestSuite>(testSuites));
       setTestReportsData(safeArray<TestReport>(reports));
 
-      const safeProjects = safeArray<Project>(projects);
-      if (safeProjects.length > 0) {
+      // Load test cases for all projects
+      if (projects?.length > 0) {
         const allTestCases: TestCase[] = [];
-        for (const project of safeProjects) {
+        for (const project of projects) {
           try {
-            const testCases = await apiClient.getTestCases(safeNumber(project.id));
-            allTestCases.push(...safeArray<TestCase>(testCases));
+            const testCases = await apiClient.getTestCases(project.id);
+            allTestCases.push(...testCases);
           } catch (err) {
             console.error(`Failed to load test cases for project ${project.id}:`, err);
           }
         }
         setTestCasesData(allTestCases);
-      } else {
-        setTestCasesData([]);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -121,6 +112,10 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -156,7 +151,7 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
       <div className="w-64 bg-white border-r border-[#e8e9ea] flex flex-col">
         <div className="p-4 border-b border-[#e8e9ea]">
           <h1 className="text-xl text-[#f19fb5]">СУТ Система</h1>
-          <p className="text-xs text-[#6c757d] mt-1">{safeString(currentUser.name, 'Пользователь')}</p>
+          <p className="text-xs text-[#6c757d] mt-1">{currentUser.name}</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
@@ -234,8 +229,7 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
                 : 'text-[#2b2f33] hover:bg-[#ffe9f0] hover:text-[#f19fb5]'
             }`}
           >
-            {/* <TODO></TODO> */}
-            {/* <User className="w-4 h-4" /> */}
+            <User className="w-4 h-4" />
             Профиль
           </button>
         </nav>
@@ -262,21 +256,17 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
             Выйти
           </button>
           <div className="mt-3 text-sm text-[#6c757d] px-3">
-            Версия Beta
+            Версия BETA
           </div>
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 p-8 overflow-auto">
-        {activeTab === 'dashboard' && (
-          <DashboardView
-            projectsData={projectsData}
-            testCasesData={testCasesData}
-            testReportsData={testReportsData}
-          />
-        )}
+        {activeTab === 'dashboard' && <DashboardView projectsData={projectsData} testCasesData={testCasesData} />}
         {activeTab === 'projects' && (
           <ProjectsView
+            currentUser={currentUser}
             projectsData={projectsData}
             setProjectsData={setProjectsData}
             requirementsData={requirementsData}
@@ -298,22 +288,8 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
             reloadData={loadData}
           />
         )}
-        {activeTab === 'requirements' && (
-          <RequirementsView
-            requirementsData={requirementsData}
-            setRequirementsData={setRequirementsData}
-            showError={showError}
-          />
-        )}
-        {activeTab === 'reports' && (
-          <ReportsView
-            showError={showError}
-            testReportsData={testReportsData}
-            projectsData={projectsData}
-            testPlansData={testPlansData}
-            testSuitesData={testSuitesData}
-          />
-        )}
+        {activeTab === 'requirements' && <RequirementsView requirementsData={requirementsData} setRequirementsData={setRequirementsData} showError={showError} />}
+        {activeTab === 'reports' && <ReportsView showError={showError} testReportsData={testReportsData} projectsData={projectsData} testPlansData={testPlansData} testSuitesData={testSuitesData} />}
         {activeTab === 'testing' && (
           <TestingView
             selectedTestSuite={selectedTestSuite}
@@ -329,6 +305,7 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
         {activeTab === 'settings' && <SystemSettingsView currentUser={currentUser} showError={showError} />}
       </div>
 
+      {/* Error/Success Modal */}
       {errorModal.show && (
         <div
           className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
@@ -389,6 +366,7 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
         </div>
       )}
 
+      {/* Notification */}
       {notification && (
         <div className="fixed bottom-4 right-4 bg-[#f19fb5] text-white px-6 py-3 rounded-lg shadow-lg z-[4000]">
           {notification}
@@ -398,30 +376,11 @@ export function TestLaunchPage({ onLogout }: TestLaunchPageProps) {
   );
 }
 
-function DashboardView({
-  projectsData,
-  testCasesData,
-  testReportsData
-}: {
-  projectsData: Project[];
-  testCasesData: TestCase[];
-  testReportsData: TestReport[];
-}) {
-  const activeProjects = safeArray(projectsData).filter(p => !p.is_archived);
+// Dashboard View
+function DashboardView({ projectsData, testCasesData }: { projectsData: Project[]; testCasesData: TestCase[] }) {
   const totalTestCases = safeCount(testCasesData);
   const passedTestCases = safeCount(testCasesData.filter(tc => tc.status === 'passed'));
   const failedTestCases = safeCount(testCasesData.filter(tc => tc.status === 'failed'));
-  const pendingTestCases = safeCount(testCasesData.filter(tc => tc.status === 'pending'));
-  const totalReports = safeCount(testReportsData);
-
-  const chartData = [
-    { name: 'Янв', tests: 45 },
-    { name: 'Фев', tests: 52 },
-    { name: 'Мар', tests: 61 },
-    { name: 'Апр', tests: 58 },
-    { name: 'Май', tests: 70 },
-    { name: 'Июн', tests: 85 },
-  ];
 
   return (
     <>
@@ -430,14 +389,14 @@ function DashboardView({
         <p className="text-[#6c757d]">Обзор текущего состояния системы тестирования</p>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-[#6c757d]">Активные проекты</h3>
             <FolderOpen className="w-5 h-5 text-[#f19fb5]" />
           </div>
-          <div className="text-[32px] text-[#f19fb5]">{formatNumber(safeCount(activeProjects))}</div>
-          <p className="text-sm text-[#6c757d]">из {formatNumber(safeCount(projectsData))} всего</p>
+          <p className="text-sm text-[#6c757d]">из {projectsData.length} всего</p>
         </div>
 
         <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
@@ -445,70 +404,35 @@ function DashboardView({
             <h3 className="text-[#6c757d]">Тест-кейсов</h3>
             <ClipboardList className="w-5 h-5 text-[#f19fb5]" />
           </div>
-          <div className="text-[32px] text-[#f19fb5]">{formatNumber(totalTestCases)}</div>
+          <div className="text-[32px] text-[#f19fb5]">{totalTestCases}</div>
           <p className="text-sm text-[#6c757d]">всего в системе</p>
         </div>
 
         <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[#6c757d]">Отчеты</h3>
-            <FileText className="w-5 h-5 text-[#f19fb5]" />
+            <h3 className="text-[#6c757d]">Успешность</h3>
+            <CheckCircle className="w-5 h-5 text-[#28a745]" />
           </div>
-          <div className="text-[32px] text-[#f19fb5]">{formatNumber(totalReports)}</div>
-          <p className="text-sm text-[#6c757d">создано отчетов</p>
+          <div className="text-[32px] text-[#28a745]">
+            {totalTestCases > 0 ? Math.round((passedTestCases / totalTestCases) * 100) : 0}%
+          </div>
+          <p className="text-sm text-[#6c757d]">{passedTestCases} пройдено</p>
         </div>
 
         <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[#6c757d]">Успешность</h3>
-            <BarChart3 className="w-5 h-5 text-[#f19fb5]" />
+            <h3 className="text-[#6c757d]">Провалено</h3>
+            <AlertCircle className="w-5 h-5 text-[#dc3545]" />
           </div>
-          <div className="text-[32px] text-[#f19fb5]">
-            {totalTestCases > 0
-              ? `${Math.round((passedTestCases / totalTestCases) * 100)}%`
-              : '0%'
-            }
-          </div>
-          <p className="text-sm text-[#6c757d">процент пройденных тестов</p>
-        </div>
-      </div>
-
-      <div className="bg-white border border-[#f1d6df] rounded-lg p-6 mb-6">
-        <h3 className="text-lg mb-4">Статус тест-кейсов</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-[#d4edda] rounded-lg">
-            <div className="text-2xl text-[#155724] mb-1">{formatNumber(passedTestCases)}</div>
-            <div className="text-sm text-[#155724]">Пройдено</div>
-          </div>
-          <div className="text-center p-4 bg-[#f8d7da] rounded-lg">
-            <div className="text-2xl text-[#721c24] mb-1">{formatNumber(failedTestCases)}</div>
-            <div className="text-sm text-[#721c24]">Провалено</div>
-          </div>
-          <div className="text-center p-4 bg-[#fff3cd] rounded-lg">
-            <div className="text-2xl text-[#856404] mb-1">{formatNumber(pendingTestCases)}</div>
-            <div className="text-sm text-[#856404]">Ожидает</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
-        <h3 className="text-lg mb-4">Тестирование по месяцам</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="tests" fill="#f19fb5" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="text-[32px] text-[#dc3545]">{failedTestCases}</div>
+          <p className="text-sm text-[#6c757d]">требуют внимания</p>
         </div>
       </div>
     </>
   );
 }
 
+// Status Badge
 function StatusBadge({ status, isArchived }: { status: string; isArchived: boolean }) {
   if (isArchived) {
     return (
@@ -532,11 +456,12 @@ function StatusBadge({ status, isArchived }: { status: string; isArchived: boole
 
   return (
     <span className={`px-3 py-1 rounded-full text-sm ${styles[status] || styles.active}`}>
-      {safeString(labels[status], status)}
+      {safeString(labels[status]) || status}
     </span>
   );
 }
 
+// Test Status Badge
 function TestStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     passed: 'bg-[#d4edda] text-[#155724]',
@@ -552,12 +477,14 @@ function TestStatusBadge({ status }: { status: string }) {
 
   return (
     <span className={`px-3 py-1 rounded-full text-sm ${styles[status] || styles.pending}`}>
-      {safeString(labels[status], status)}
+      {safeString(labels[status]) || status}
     </span>
   );
 }
 
+// Projects View
 function ProjectsView({
+  currentUser,
   projectsData,
   setProjectsData,
   requirementsData,
@@ -570,6 +497,7 @@ function ProjectsView({
   showError,
   reloadData
 }: {
+  currentUser: UserType;
   projectsData: Project[];
   setProjectsData: (data: Project[]) => void;
   requirementsData: Requirement[];
@@ -584,27 +512,37 @@ function ProjectsView({
 }) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [newProject, setNewProject] = useState({ name: '', responsible_name: '' });
+  const [newProject, setNewProject] = useState({
+    name: '',
+    responsible_name: currentUser.name,
+    completion_date: ''
+  });
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // Фильтрация проектов
   const activeProjects = safeArray(projectsData).filter(p => !p.is_archived);
 
-  const handleCreateProject = async () => {
-    const projectName = safeString(newProject.name, '').trim();
-    const responsibleName = safeString(newProject.responsible_name, '').trim();
+  const filteredProjects = activeProjects.filter(project => {
+    if (!searchQuery.trim()) return true;
 
-    if (!projectName || !responsibleName) {
+    const query = searchQuery.toLowerCase();
+    return (
+      project.name.toLowerCase().includes(query) ||
+      (project.responsible_name &&
+       project.responsible_name.toLowerCase().includes(query))
+    );
+  });
+
+  const handleCreateProject = async () => {
+    if (!newProject.name.trim() || !newProject.responsible_name.trim()) {
       showError('Пожалуйста, заполните все поля');
       return;
     }
 
     try {
-      await apiClient.createProject({
-        name: projectName,
-        responsible_name: responsibleName
-      });
-      showError('Проект успешно создан', 'success');
+      await apiClient.createProject(newProject);
       setShowNewProjectModal(false);
-      setNewProject({ name: '', responsible_name: '' });
+      setNewProject({ name: '', responsible_name: currentUser.name , completion_date: ''});
       await reloadData();
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -613,13 +551,12 @@ function ProjectsView({
   };
 
   const handleDeleteProject = async (project: Project) => {
-    if (!confirm(`Вы уверены, что хотите удалить проект "${safeString(project.name)}"?`)) {
+    if (!confirm(`Вы уверены, что хотите удалить проект "${project.name}"?`)) {
       return;
     }
 
     try {
-      await apiClient.deleteProject(safeNumber(project.id));
-      showError('Проект успешно удален', 'success');
+      await apiClient.deleteProject(project.id);
       await reloadData();
     } catch (error) {
       console.error('Failed to delete project:', error);
@@ -629,7 +566,7 @@ function ProjectsView({
 
   const handleArchiveProject = async (project: Project) => {
     try {
-      await apiClient.archiveProject(safeNumber(project.id));
+      await apiClient.archiveProject(project.id);
       showError('Проект успешно архивирован', 'success');
       await reloadData();
     } catch (error) {
@@ -663,6 +600,7 @@ function ProjectsView({
           <h1 className="text-[26px] text-[#1e1e1e]">Проекты</h1>
           <p className="text-[#6c757d]">Управление проектами тестирования</p>
         </div>
+
         <button
           onClick={() => setShowNewProjectModal(true)}
           className="px-4 py-2 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center gap-2"
@@ -672,22 +610,55 @@ function ProjectsView({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {activeProjects.length > 0 ? (
-          activeProjects.map((project) => (
-            <div key={safeNumber(project.id)} className="bg-white border border-[#f1d6df] rounded-lg p-6">
+      {/* Простая строка поиска */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6c757d]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Поиск проектов по названию или ответственному..."
+            className="w-full pl-10 pr-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+          />
+        </div>
+        {searchQuery && (
+          <p className="text-sm text-[#6c757d] mt-2">
+            Найдено проектов: {filteredProjects.length} из {activeProjects.length}
+          </p>
+        )}
+      </div>
+
+      {filteredProjects.length === 0 ? (
+        <div className="bg-white border border-[#f1d6df] rounded-lg p-8 text-center">
+          <Search className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
+          <h3 className="text-lg text-[#2b2f33] mb-2">
+            {searchQuery ? 'Проекты не найдены' : 'Нет активных проектов'}
+          </h3>
+          <p className="text-[#6c757d] mb-4">
+            {searchQuery
+              ? 'Попробуйте изменить поисковый запрос'
+              : 'Создайте первый проект, нажав на кнопку "Новый проект"'}
+          </p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="px-4 py-2 bg-[#ffe9f0] text-[#f19fb5] rounded-lg hover:bg-[#ffd7db] transition-all"
+            >
+              Очистить поиск
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filteredProjects.map((project) => (
+            <div key={project.id} className="bg-white border border-[#f1d6df] rounded-lg p-6">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                  <h3 className="text-lg text-[#f19fb5] mb-1">
-                    {safeString(project.name, 'Без названия')}
-                  </h3>
-                  <p className="text-sm text-[#6c757d]">
-                    Ответственный: {safeString(project.responsible_name, 'Не указан')}
-                  </p>
+                  <h3 className="text-lg text-[#f19fb5] mb-1">{project.name}</h3>
+                  <p className="text-sm text-[#6c757d]">Создан: {project.responsible_name}</p>
                   {project.completion_date && (
-                    <p className="text-sm text-[#6c757d]">
-                      Дата завершения: {safeDate(project.completion_date)}
-                    </p>
+                    <p className="text-sm text-[#6c757d]">Срок выполнения: {new Date(project.completion_date).toLocaleDateString('ru-RU')}</p>
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -708,7 +679,7 @@ function ProjectsView({
                 </div>
               </div>
               <div className="mb-3">
-                <StatusBadge status={safeString(project.status, 'active')} isArchived={Boolean(project.is_archived)} />
+                <StatusBadge status={project.status} isArchived={project.is_archived} />
               </div>
               <button
                 onClick={() => setSelectedProject(project)}
@@ -717,16 +688,11 @@ function ProjectsView({
                 Подробнее
               </button>
             </div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12 bg-white border border-[#f1d6df] rounded-lg">
-            <FolderOpen className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-            <h3 className="text-lg text-[#6c757d] mb-2">Нет активных проектов</h3>
-            <p className="text-sm text-[#6c757d]">Создайте первый проект, чтобы начать работу</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
+      {/* New Project Modal */}
       {showNewProjectModal && (
         <div
           className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
@@ -748,14 +714,16 @@ function ProjectsView({
                   placeholder="Введите название"
                 />
               </div>
+            </div>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-2 text-[#2b2f33]">Ответственный</label>
+                <label className="block text-sm mb-2 text-[#2b2f33]">Срок выполнения (опционально)</label>
                 <input
-                  type="text"
-                  value={newProject.responsible_name}
-                  onChange={(e) => setNewProject({ ...newProject, responsible_name: e.target.value })}
+                  type="date"
+                  value={newProject.completion_date}
+                  onChange={(e) => setNewProject({ ...newProject, completion_date: e.target.value })}
                   className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-                  placeholder="Введите имя"
+                  placeholder="Введите дату"
                 />
               </div>
             </div>
@@ -780,6 +748,7 @@ function ProjectsView({
   );
 }
 
+// Project Detail View - Placeholder for now, will be continued
 function ProjectDetailView({
   project,
   onBack,
@@ -807,31 +776,32 @@ function ProjectDetailView({
 }) {
   const [activeTab, setActiveTab] = useState<'test-plans' | 'test-cases' | 'test-suites'>('test-plans');
   const [showNewTestCaseModal, setShowNewTestCaseModal] = useState(false);
-  const [newTestCase, setNewTestCase] = useState({ name: '', status: 'pending' });
+  const [newTestCase, setNewTestCase] = useState({ name: '', description: '' });
   const [showNewTestPlanModal, setShowNewTestPlanModal] = useState(false);
   const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
+  const [showNewTestSuiteModal, setShowNewTestSuiteModal] = useState(false);
+  const [newTestSuite, setNewTestSuite] = useState({ name: '' });
+  const [newDate, setNewDate] = useState({ completion_date: '' });
 
-  const projectTestCases = safeArray(testCasesData).filter(tc => tc.project_id === project.id);
-  const projectTestPlans = safeArray(testPlansData).filter(tp => tp.project_id === project.id);
-  // const projectTestSuites = safeArray(testSuitesData).filter(ts => ts.project_id === project.id);
+  const projectTestCases = testCasesData.filter(tc => tc.project_id === project.id);
+  const projectTestPlans = testPlansData.filter(tp => tp.project_id === project.id);
+  const projectTestSuites = testSuitesData;
+  const [showUpdateProjectModal, setShowUpdateProjectModal] = useState(false);
 
   const handleCreateTestCase = async () => {
-    const testCaseName = safeString(newTestCase.name, '').trim();
-
-    if (!testCaseName) {
+    if (!newTestCase.name.trim()) {
       showError('Введите название тест-кейса');
       return;
     }
 
     try {
       await apiClient.createTestCase({
-        project_id: safeNumber(project.id),
-        name: testCaseName,
-        status: safeString(newTestCase.status, 'pending')
+        project_id: project.id,
+        name: newTestCase.name,
+        description: newTestCase.description
       });
-      showError('Тест-кейс создан', 'success');
       setShowNewTestCaseModal(false);
-      setNewTestCase({ name: '', status: 'pending' });
+      setNewTestCase({ name: '', description: 'pending' });
       await reloadData();
     } catch (error) {
       console.error('Failed to create test case:', error);
@@ -841,8 +811,7 @@ function ProjectDetailView({
 
   const handleDeleteTestCase = async (testCaseId: number) => {
     try {
-      await apiClient.deleteTestCase(safeNumber(testCaseId));
-      showError('Тест-кейс удален', 'success');
+      await apiClient.deleteTestCase(testCaseId);
       await reloadData();
     } catch (error) {
       console.error('Failed to delete test case:', error);
@@ -850,23 +819,29 @@ function ProjectDetailView({
     }
   };
 
-  const handleCreateTestPlan = async () => {
-    const planName = safeString(newTestPlan.name, '').trim();
-    const planGoal = safeString(newTestPlan.goal, '').trim();
+  const handleDeleteTestSuite = async (testSuiteId: number) => {
+    try {
+      await apiClient.deleteTestSuite(testSuiteId);
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to delete test suite:', error);
+      showError('Ошибка при удалении тестового набора');
+    }
+  };
 
-    if (!planName || !planGoal) {
+  const handleCreateTestPlan = async () => {
+    if (!newTestPlan.name.trim() || !newTestPlan.goal.trim()) {
       showError('Заполните все обязательные поля');
       return;
     }
 
     try {
       await apiClient.createTestPlan({
-        project_id: safeNumber(project.id),
-        name: planName,
-        goal: planGoal,
+        project_id: project.id,
+        name: newTestPlan.name,
+        goal: newTestPlan.goal,
         deadline: newTestPlan.deadline || undefined
       });
-      showError('Тест-план создан', 'success');
       setShowNewTestPlanModal(false);
       setNewTestPlan({ name: '', goal: '', deadline: '' });
       await reloadData();
@@ -876,14 +851,48 @@ function ProjectDetailView({
     }
   };
 
+  const handleCreateTestSuite = async () => {
+    if (!newTestSuite.name.trim()) {
+      showError('Заполните все обязательные поля');
+      return;
+    }
+
+    try {
+      await apiClient.createTestSuite({
+        name: newTestSuite.name,
+      });
+      setShowNewTestSuiteModal(false);
+      setNewTestSuite({ name: ''});
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to create test plan:', error);
+      showError('Ошибка при создании тестового набора');
+    }
+  };
+
   const handleDeleteTestPlan = async (testPlanId: number) => {
     try {
-      await apiClient.deleteTestPlan(safeNumber(testPlanId));
-      showError('Тест-план удален', 'success');
+      await apiClient.deleteTestPlan(testPlanId);
       await reloadData();
     } catch (error) {
       console.error('Failed to delete test plan:', error);
       showError('Ошибка при удалении тест-плана');
+    }
+  };
+
+  const handleUpdateProject = async () => {
+    if (!newDate.completion_date.trim()) {
+      showError('Заполните поле даты');
+      return
+    }
+    try {
+      await apiClient.updateProject(newDate);
+      setShowUpdateProjectModal(false);
+      setNewDate(newDate)
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      showError('Ошибка при обновлении проекта');
     }
   };
 
@@ -897,29 +906,64 @@ function ProjectDetailView({
           <Undo2 className="w-4 h-4" />
           Назад к проектам
         </button>
-        <h1 className="text-[26px] text-[#1e1e1e]">{safeString(project.name, 'Проект без названия')}</h1>
-        <p className="text-[#6c757d]">
-          Ответственный: {safeString(project.responsible_name, 'Не указан')}
-        </p>
+        <h1 className="text-[26px] text-[#1e1e1e]">{project.name}</h1>
+        <p className="text-[#6c757d]">Ответственный: {project.responsible_name}</p>
       </div>
-
-      {/* Project Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white border border-[#f1d6df] rounded-lg p-4 text-center">
-          <div className="text-2xl text-[#f19fb5] mb-1">{formatNumber(safeCount(projectTestPlans))}</div>
-          <div className="text-sm text-[#6c757d]">Тест-планов</div>
+        <button
+          onClick={() => setShowUpdateProjectModal(true)}
+          className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+          title="Редактировать"
+        >
+          <Edit className="w-4 h-4" />
+        </button>
+      {/* Update Project Modal */}
+      {/* TODO: хз как это через такую форму сделать, тк класс проекта так не передать */}
+      {showUpdateProjectModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setShowUpdateProjectModal(false)}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">Обновление проекта</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2 text-[#2b2f33]">Срок выполнения (опционально)</label>
+              <input
+                type="date"
+                value={newDate.completion_date}
+                onChange={(e) => {
+                  setNewDate({
+                    ...newDate,
+                    completion_date: e.target.value
+                  });
+                }}
+                className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                placeholder="Введите дату"
+              />
+            </div>
+          </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowUpdateProjectModal(false)}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => handleUpdateProject()}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
+              >
+                Обновить
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="bg-white border border-[#f1d6df] rounded-lg p-4 text-center">
-          <div className="text-2xl text-[#f19fb5] mb-1">{formatNumber(safeCount(projectTestCases))}</div>
-          <div className="text-sm text-[#6c757d]">Тест-кейсов</div>
-        </div>
-        {/* TODO */}
-        {/* <div className="bg-white border border-[#f1d6df] rounded-lg p-4 text-center"> */}
-          {/* <div className="text-2xl text-[#f19fb5] mb-1">{formatNumber(safeCount(projectTestSuites))}</div> */}
-          {/* <div className="text-sm text-[#6c757d]">Тестовых наборов</div> */}
-        {/* </div> */}
-      </div>
+      )}
 
+      {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-[#e8e9ea]">
         <button
           onClick={() => setActiveTab('test-plans')}
@@ -953,6 +997,7 @@ function ProjectDetailView({
         </button>
       </div>
 
+      {/* Test Plans Tab */}
       {activeTab === 'test-plans' && (
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -966,42 +1011,37 @@ function ProjectDetailView({
             </button>
           </div>
           <div className="space-y-3">
-            {projectTestPlans.length > 0 ? (
-              projectTestPlans.map((plan) => (
-                <div key={safeNumber(plan.id)} className="bg-white border border-[#f1d6df] rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-[#f19fb5] mb-1">
-                        {safeString(plan.name, 'Без названия')}
-                      </h3>
-                      <p className="text-sm text-[#6c757d]">
-                        {safeString(plan.goal, 'Цель не указана')}
+            {projectTestPlans.map((plan) => (
+              <div key={plan.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-[#f19fb5] mb-1">{plan.name}</h3>
+                    <p className="text-sm text-[#6c757d]">{plan.goal}</p>
+                    {plan.deadline && (
+                      <p className="text-sm text-[#6c757d] mt-1">
+                        Дедлайн: {new Date(plan.deadline).toLocaleDateString('ru-RU')}
                       </p>
-                      {plan.deadline && (
-                        <p className="text-sm text-[#6c757d] mt-1">
-                          Дедлайн: {safeDate(plan.deadline)}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleDeleteTestPlan(safeNumber(plan.id))}
-                      className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    )}
                   </div>
+                  <button
+                    onClick={() => handleDeleteTestPlan(plan.id)}
+                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-              ))
-            ) : (
-              <div className="text-center text-[#6c757d] py-8 bg-white border border-[#f1d6df] rounded-lg">
-                <FileText className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-                <p>Нет тест-планов для этого проекта</p>
+              </div>
+            ))}
+            {projectTestPlans.length === 0 && (
+              <div className="text-center text-[#6c757d] py-8">
+                Нет тест-планов
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* Test Cases Tab */}
       {activeTab === 'test-cases' && (
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -1015,56 +1055,70 @@ function ProjectDetailView({
             </button>
           </div>
           <div className="space-y-3">
-            {projectTestCases.length > 0 ? (
-              projectTestCases.map((testCase) => (
-                <div key={safeNumber(testCase.id)} className="bg-white border border-[#f1d6df] rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-[#f19fb5] mb-2">
-                        {safeString(testCase.name, 'Тест-кейс без названия')}
-                      </h3>
-                      <TestStatusBadge status={safeString(testCase.status, 'pending')} />
-                    </div>
-                    <button
-                      onClick={() => handleDeleteTestCase(safeNumber(testCase.id))}
-                      className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+            {projectTestCases.map((testCase) => (
+              <div key={testCase.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-[#f19fb5] mb-2">{testCase.name}</h3>
+                    <TestStatusBadge status={testCase.status} />
                   </div>
+                  <button
+                    onClick={() => handleDeleteTestCase(testCase.id)}
+                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-              ))
-            ) : (
-              <div className="text-center text-[#6c757d] py-8 bg-white border border-[#f1d6df] rounded-lg">
-                <ClipboardList className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-                <p>Нет тест-кейсов для этого проекта</p>
+              </div>
+            ))}
+            {projectTestCases.length === 0 && (
+              <div className="text-center text-[#6c757d] py-8">
+                Нет тест-кейсов
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* Test Suites Tab */}
       {activeTab === 'test-suites' && (
         <div>
-          <h2 className="text-xl text-[#1e1e1e] mb-4">Тестовые наборы</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl text-[#1e1e1e]">Тестовые наборы</h2>
+            <button
+              onClick={() => setShowNewTestSuiteModal(true)}
+              className="px-4 py-2 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Новый тестовый набор
+            </button>
+          </div>
           <div className="space-y-3">
-            {/* TODO */}
-            {/* {projectTestSuites.length > 0 ? (
-              projectTestSuites.map((suite) => ( */}
-                {/* <div key={safeNumber(suite.id)} className="bg-white border border-[#f1d6df] rounded-lg p-4"> */}
-                  {/* <h3 className="text-[#f19fb5]">{safeString(suite.name, 'Набор без названия')}</h3> */}
-                {/* </div> */}
-              {/* )) */}
-            {/* ) : ( */}
-              <div className="text-center text-[#6c757d] py-8 bg-white border border-[#f1d6df] rounded-lg">
-                <Rocket className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-                <p>Нет тестовых наборов для этого проекта</p>
+            {projectTestSuites.map((testSuite) => (
+              <div key={testSuite.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h5 className="text-[#6c757d] mb-2">{testSuite.name}</h5>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteTestSuite(testSuite.id)}
+                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            {/* )} */}
+            ))}
+            {projectTestSuites.length === 0 && (
+              <div className="text-center text-[#6c757d] py-8">
+                Нет тестовых планов
+              </div>
+            )}
           </div>
         </div>
       )}
 
+      {/* New Test Case Modal */}
       {showNewTestCaseModal && (
         <div
           className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
@@ -1083,20 +1137,18 @@ function ProjectDetailView({
                   value={newTestCase.name}
                   onChange={(e) => setNewTestCase({ ...newTestCase, name: e.target.value })}
                   className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-                  placeholder="Введите название"
+                  placeholder="Введите название..."
                 />
               </div>
               <div>
-                <label className="block text-sm mb-2 text-[#2b2f33]">Статус</label>
-                <select
-                  value={newTestCase.status}
-                  onChange={(e) => setNewTestCase({ ...newTestCase, status: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
-                >
-                  <option value="pending">Ожидает</option>
-                  <option value="passed">Пройден</option>
-                  <option value="failed">Провален</option>
-                </select>
+                <label className="block mb-2">Описание</label>
+                <textarea
+                  value={newTestCase.description}
+                  onChange={(e) => setNewTestCase({...newTestCase, description: e.target.value})}
+                  placeholder="Введите описание тест-кейса..."
+                  className="w-full px-4 py-2.5 border border-[#f1d6df] rounded-lg"
+                  rows={3}
+                />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
@@ -1117,6 +1169,48 @@ function ProjectDetailView({
         </div>
       )}
 
+      {/* New Test Suite Modal */}
+      {showNewTestSuiteModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setShowNewTestSuiteModal(false)}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">Новый тестовый набор</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">Название</label>
+                <input
+                  type="text"
+                  value={newTestSuite.name}
+                  onChange={(e) => setNewTestSuite({ ...newTestSuite, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите название..."
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowNewTestSuiteModal(false)}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleCreateTestSuite}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
+              >
+                Создать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Test Plan Modal */}
       {showNewTestPlanModal && (
         <div
           className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
@@ -1179,6 +1273,7 @@ function ProjectDetailView({
   );
 }
 
+// Archived Projects View
 function ArchivedProjectsView({
   projectsData,
   setProjectsData,
@@ -1190,16 +1285,15 @@ function ArchivedProjectsView({
   showError: (msg: string, type?: 'error' | 'success') => void;
   reloadData: () => Promise<void>;
 }) {
-  const archivedProjects = safeArray(projectsData).filter(p => p.is_archived);
+  const archivedProjects = projectsData.filter(p => p.is_archived);
 
   const handleDeleteProject = async (project: Project) => {
-    if (!confirm(`Вы уверены, что хотите удалить проект "${safeString(project.name)}"?`)) {
+    if (!confirm(`Вы уверены, что хотите удалить проект "${project.name}"?`)) {
       return;
     }
 
     try {
-      await apiClient.deleteProject(safeNumber(project.id));
-      showError('Проект успешно удален', 'success');
+      await apiClient.deleteProject(project.id);
       await reloadData();
     } catch (error) {
       console.error('Failed to delete project:', error);
@@ -1215,37 +1309,27 @@ function ArchivedProjectsView({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {archivedProjects.length > 0 ? (
-          archivedProjects.map((project) => (
-            <div key={safeNumber(project.id)} className="bg-white border border-[#f1d6df] rounded-lg p-6">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <h3 className="text-lg text-[#6c757d] mb-1">
-                    {safeString(project.name, 'Проект без названия')}
-                  </h3>
-                  <p className="text-sm text-[#6c757d]">
-                    Ответственный: {safeString(project.responsible_name, 'Не указан')}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDeleteProject(project)}
-                  className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
-                  title="Удалить"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+        {archivedProjects.map((project) => (
+          <div key={project.id} className="bg-white border border-[#f1d6df] rounded-lg p-6">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="text-lg text-[#6c757d] mb-1">{project.name}</h3>
+                <p className="text-sm text-[#6c757d]">Ответственный: {project.responsible_name}</p>
               </div>
-              <StatusBadge
-                status={safeString(project.status, 'completed')}
-                isArchived={Boolean(project.is_archived)}
-              />
+              <button
+                onClick={() => handleDeleteProject(project)}
+                className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                title="Удалить"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12 bg-white border border-[#f1d6df] rounded-lg">
-            <Archive className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-            <h3 className="text-lg text-[#6c757d] mb-2">Нет архивных проектов</h3>
-            <p className="text-sm text-[#6c757d]">Все проекты активны или еще не созданы</p>
+            <StatusBadge status={project.status} isArchived={project.is_archived} />
+          </div>
+        ))}
+        {archivedProjects.length === 0 && (
+          <div className="col-span-full text-center text-[#6c757d] py-12">
+            Нет архивных проектов
           </div>
         )}
       </div>
@@ -1253,6 +1337,7 @@ function ArchivedProjectsView({
   );
 }
 
+// Requirements View
 function RequirementsView({
   requirementsData,
   setRequirementsData,
@@ -1264,9 +1349,9 @@ function RequirementsView({
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredRequirements = safeArray(requirementsData).filter(req =>
-    safeString(req.name).toLowerCase().includes(searchQuery.toLowerCase()) ||
-    safeString(req.description).toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRequirements = requirementsData.filter(req =>
+    req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    req.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -1290,30 +1375,19 @@ function RequirementsView({
       </div>
 
       <div className="space-y-3">
-        {filteredRequirements.length > 0 ? (
-          filteredRequirements.map((req) => (
-            <div key={safeNumber(req.id)} className="bg-white border border-[#f1d6df] rounded-lg p-4">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="text-[#f19fb5] mb-2">
-                    REQ-{safeNumber(req.id)}: {safeString(req.name, 'Требование без названия')}
-                  </h3>
-                  <p className="text-sm text-[#6c757d]">
-                    {safeString(req.description, 'Описание отсутствует')}
-                  </p>
-                </div>
+        {filteredRequirements.map((req) => (
+          <div key={req.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-[#f19fb5] mb-2">REQ-{req.id}: {req.name}</h3>
+                <p className="text-sm text-[#6c757d]">{req.description}</p>
               </div>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-12 bg-white border border-[#f1d6df] rounded-lg">
-            <FileText className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-            <h3 className="text-lg text-[#6c757d] mb-2">
-              {searchQuery ? 'Требования не найдены' : 'Нет требований'}
-            </h3>
-            <p className="text-sm text-[#6c757d]">
-              {searchQuery ? 'Попробуйте изменить поисковый запрос' : 'Создайте первое требование'}
-            </p>
+          </div>
+        ))}
+        {filteredRequirements.length === 0 && (
+          <div className="text-center text-[#6c757d] py-12">
+            {searchQuery ? 'Требования не найдены' : 'Нет требований'}
           </div>
         )}
       </div>
@@ -1321,43 +1395,85 @@ function RequirementsView({
   );
 }
 
+// Reports View
 function ReportsView({
   showError,
   testReportsData,
   projectsData,
   testPlansData,
-  testSuitesData
+  testSuitesData,
+  reloadData
 }: {
   showError: (msg: string, type?: 'error' | 'success') => void;
   testReportsData: TestReport[];
   projectsData: Project[];
   testPlansData: TestPlan[];
   testSuitesData: TestSuite[];
+  reloadData: () => Promise<void>;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const getProjectName = (projectId: number) => {
-    const project = safeArray(projectsData).find(p => p.id === projectId);
-    return safeString(project?.name, `Проект #${projectId}`);
+    const project = projectsData.find(p => p.id === projectId);
+    return project?.name || `Проект #${projectId}`;
   };
 
   const getTestPlanName = (testPlanId?: number) => {
-    if (!testPlanId) return 'Не указан';
-    const plan = safeArray(testPlansData).find(p => p.id === testPlanId);
-    return safeString(plan?.name, `План #${testPlanId}`);
+    if (!testPlanId) return 'N/A';
+    const plan = testPlansData.find(p => p.id === testPlanId);
+    return plan?.name || `План #${testPlanId}`;
   };
 
   const getTestSuiteName = (testSuiteId?: number) => {
-    if (!testSuiteId) return 'Не указан';
-    const suite = safeArray(testSuitesData).find(s => s.id === testSuiteId);
-    return safeString(suite?.name, `Набор #${testSuiteId}`);
+    if (!testSuiteId) return 'N/A';
+    const suite = testSuitesData.find(s => s.id === testSuiteId);
+    return suite?.name || `Набор #${testSuiteId}`;
   };
 
-  const filteredReports = safeArray(testReportsData).filter(report =>
-    getProjectName(report.project_id).toLowerCase().includes(searchQuery.toLowerCase()) ||
-    getTestPlanName(report.test_plan_id).toLowerCase().includes(searchQuery.toLowerCase()) ||
-    safeString(report.id.toString()).includes(searchQuery)
-  );
+  const handleDeleteReports = async (report: TestReport) => {
+    if (!confirm(`Вы уверены, что хотите удалить отчет "${report.id}"?`)) {
+      return;
+    }
+
+    try {
+      await apiClient.deleteTestReport(report.id);
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to delete report:', error);
+      showError('Ошибка при удалении отчета');
+    }
+  };
+
+  // Фильтрация отчётов по нескольким полям
+  const filteredReports = testReportsData.filter(report => {
+    const query = searchQuery.toLowerCase();
+
+    // Проверяем совпадение по ID отчёта
+    if (report.id.toString().includes(query)) return true;
+
+    // По ID проекта
+    if (report.project_id.toString().includes(query)) return true;
+
+    // По названию проекта (если есть совпадение в имени)
+    const projectName = getProjectName(report.project_id);
+    if (projectName.toLowerCase().includes(query)) return true;
+
+    // По ID тест-плана
+    if (report.test_plan_id && report.test_plan_id.toString().includes(query)) return true;
+
+    // По названию тест-плана
+    const testPlanName = getTestPlanName(report.test_plan_id);
+    if (testPlanName.toLowerCase().includes(query)) return true;
+
+    // По ID тестового набора
+    if (report.test_suite_id && report.test_suite_id.toString().includes(query)) return true;
+
+    // По названию тестового набора
+    const testSuiteName = getTestSuiteName(report.test_suite_id);
+    if (testSuiteName.toLowerCase().includes(query)) return true;
+
+    return false;
+  });
 
   return (
     <>
@@ -1373,52 +1489,43 @@ function ReportsView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Поиск отчетов..."
+            placeholder="Поиск отчетов по ID, названию проекта, тест-плана или набора..."
             className="w-full pl-10 pr-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
           />
         </div>
       </div>
 
       <div className="space-y-3">
-        {filteredReports.length > 0 ? (
-          filteredReports.map((report) => (
-            <div key={safeNumber(report.id)} className="bg-white border border-[#f1d6df] rounded-lg p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <h3 className="text-[#f19fb5] mb-1">Отчет #{safeNumber(report.id)}</h3>
-                  <p className="text-sm text-[#6c757d]">
-                    Проект: {getProjectName(report.project_id)}
-                  </p>
-                  <p className="text-sm text-[#6c757d]">
-                    Тест-план: {getTestPlanName(report.test_plan_id)}
-                  </p>
-                  <p className="text-sm text-[#6c757d]">
-                    Тестовый набор: {getTestSuiteName(report.test_suite_id)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-[#6c757d]">
-                    Пройдено: {formatNumber(report.passed_tests)}
-                  </p>
-                  <p className="text-sm text-[#6c757d]">
-                    Длительность: {formatNumber(report.duration)} сек
-                  </p>
-                  <p className="text-xs text-[#6c757d] mt-1">
-                    {safeDate(report.created_at, 'Дата не указана')}
-                  </p>
-                </div>
+        {filteredReports.map((report) => (
+          <div key={report.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="text-[#f19fb5] mb-1">Отчет #{report.id}</h3>
+                <p className="text-sm text-[#6c757d]">Проект: {getProjectName(report.project_id)}</p>
+                <p className="text-sm text-[#6c757d]">Тест-план: {getTestPlanName(report.test_plan_id)}</p>
+                <p className="text-sm text-[#6c757d]">Тестовый набор: {getTestSuiteName(report.test_suite_id)}</p>
               </div>
+              <div className="text-right">
+                <p className="text-sm text-[#6c757d]">Пройдено: {report.passed_tests}</p>
+                <p className="text-sm text-[#6c757d]">Длительность: {report.duration} сек</p>
+                <p className="text-xs text-[#6c757d] mt-1">
+                  {new Date(report.created_at).toLocaleString('ru-RU')}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDeleteReports(report)}
+                className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-12 bg-white border border-[#f1d6df] rounded-lg">
-            <FileText className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-            <h3 className="text-lg text-[#6c757d] mb-2">
-              {searchQuery ? 'Отчеты не найдены' : 'Нет отчетов'}
-            </h3>
-            <p className="text-sm text-[#6c757d]">
-              {searchQuery ? 'Попробуйте изменить поисковый запрос' : 'Запустите тестирование для создания отчетов'}
-            </p>
+          </div>
+        ))}
+        {filteredReports.length === 0 && (
+          <div className="text-center text-[#6c757d] py-12">
+            {searchQuery
+              ? `Нет отчетов, соответствующих запросу "${searchQuery}"`
+              : 'Нет отчетов'}
           </div>
         )}
       </div>
@@ -1426,6 +1533,7 @@ function ReportsView({
   );
 }
 
+// Testing View
 function TestingView({
   selectedTestSuite,
   setSelectedTestSuite,
@@ -1443,16 +1551,6 @@ function TestingView({
   setSelectedPlan: (plan: string) => void;
   testCasesData: TestCase[];
 }) {
-  const suites = safeArray(testSuitesData);
-  const testCases = safeArray(testCasesData);
-
-  const passedCount = safeCount(testCases.filter(tc => tc.status === 'passed'));
-  const failedCount = safeCount(testCases.filter(tc => tc.status === 'failed'));
-  const pendingCount = safeCount(testCases.filter(tc => tc.status === 'pending'));
-  const totalCount = safeCount(testCases);
-
-  const successRate = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
-
   return (
     <>
       <div className="mb-6">
@@ -1468,56 +1566,41 @@ function TestingView({
           className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5] mb-4"
         >
           <option value="">Выберите тестовый набор</option>
-          {suites.length > 0 ? (
-            suites.map((suite) => (
-              <option key={safeNumber(suite.id)} value={String(suite.id)}>
-                {safeString(suite.name, 'Набор без названия')}
-              </option>
-            ))
-          ) : (
-            <option value="" disabled>Нет доступных наборов</option>
-          )}
+          {testSuitesData.map((suite) => (
+            <option key={suite.id} value={String(suite.id)}>
+              {suite.name}
+            </option>
+          ))}
         </select>
         <button
           onClick={handleRunTests}
-          disabled={!selectedTestSuite || suites.length === 0}
-          className="w-full px-6 py-3 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-6 py-3 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center justify-center gap-2"
         >
           <PlayCircle className="w-5 h-5" />
           Запустить тесты
         </button>
       </div>
 
-      <div className="bg-white border border-[#f1d6df] rounded-lg p-6 mb-6">
+      <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
         <h3 className="text-lg mb-4">Статистика тестов</h3>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="text-2xl text-[#f19fb5] mb-1">{formatNumber(totalCount)}</div>
-            <div className="text-sm text-[#6c757d]">Всего</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl text-[#28a745] mb-1">{formatNumber(passedCount)}</div>
+            <div className="text-2xl text-[#28a745] mb-1">
+              {testCasesData.filter(tc => tc.status === 'passed').length}
+            </div>
             <div className="text-sm text-[#6c757d]">Пройдено</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl text-[#dc3545] mb-1">{formatNumber(failedCount)}</div>
+            <div className="text-2xl text-[#dc3545] mb-1">
+              {testCasesData.filter(tc => tc.status === 'failed').length}
+            </div>
             <div className="text-sm text-[#6c757d]">Провалено</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl text-[#ffc107] mb-1">{formatNumber(pendingCount)}</div>
+            <div className="text-2xl text-[#ffc107] mb-1">
+              {testCasesData.filter(tc => tc.status === 'pending').length}
+            </div>
             <div className="text-sm text-[#6c757d]">Ожидает</div>
-          </div>
-        </div>
-        <div className="mt-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span>Успешность тестов</span>
-            <span>{successRate}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-[#f19fb5] h-2 rounded-full"
-              style={{ width: `${successRate}%` }}
-            />
           </div>
         </div>
       </div>
@@ -1525,7 +1608,8 @@ function TestingView({
   );
 }
 
-function ProfileView({ currentUser }: { currentUser: User }) {
+// Profile View
+function ProfileView({ currentUser }: { currentUser: UserType }) {
   const roleLabels: Record<string, string> = {
     'admin': 'Администратор',
     'manager': 'Менеджер',
@@ -1544,27 +1628,22 @@ function ProfileView({ currentUser }: { currentUser: User }) {
       <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 bg-[#ffe9f0] rounded-full flex items-center justify-center">
-            {/* TODO */}
-            {/* <User className="w-8 h-8 text-[#f19fb5]" /> */}
+            <User className="w-8 h-8 text-[#f19fb5]" />
           </div>
           <div>
-            <h2 className="text-xl text-[#f19fb5]">{safeString(currentUser.name, 'Пользователь')}</h2>
-            <p className="text-[#6c757d]">{safeString(currentUser.username, 'Логин не указан')}</p>
+            <h2 className="text-xl text-[#f19fb5]">{safeString(currentUser.name)}</h2>
+            <p className="text-[#6c757d]">{safeString(currentUser.username)}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="text-sm text-[#6c757d]">Роль</label>
-            <p className="text-[#2b2f33]">
-              {safeString(roleLabels[currentUser.role], safeString(currentUser.role, 'Не определена'))}
-            </p>
+            <p className="text-[#2b2f33]">{roleLabels[currentUser.role] || currentUser.role}</p>
           </div>
           <div>
             <label className="text-sm text-[#6c757d]">Дата создания</label>
-            <p className="text-[#2b2f33]">
-              {safeDate(currentUser.created_at, 'Не указана')}
-            </p>
+            <p className="text-[#2b2f33]">{new Date(currentUser.created_at).toLocaleDateString('ru-RU')}</p>
           </div>
         </div>
       </div>
@@ -1572,21 +1651,18 @@ function ProfileView({ currentUser }: { currentUser: User }) {
   );
 }
 
+// System Settings View
 function SystemSettingsView({
   currentUser,
   showError
 }: {
-  currentUser: User;
+  currentUser: UserType;
   showError: (msg: string, type?: 'error' | 'success') => void;
 }) {
   if (currentUser.role !== 'admin') {
     return (
-      <div className="text-center py-12 bg-white border border-[#f1d6df] rounded-lg">
-        <AlertCircle className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
-        <h3 className="text-lg text-[#6c757d] mb-2">Доступ запрещен</h3>
-        <p className="text-sm text-[#6c757d]">
-          У вас нет прав доступа к настройкам системы
-        </p>
+      <div className="text-center text-[#6c757d] py-12">
+        У вас нет доступа к настройкам системы
       </div>
     );
   }
@@ -1601,12 +1677,9 @@ function SystemSettingsView({
       <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
         <h3 className="text-lg mb-4">Системная информация</h3>
         <div className="space-y-2 text-sm text-[#6c757d]">
-          <p>Версия: {safeString('Beta', 'Не указана')}</p>
-          <p>
-            Текущий пользователь: {safeString(currentUser.name, 'Не указан')}
-            ({safeString(currentUser.role, 'Не определена')})
-          </p>
-          <p>Дата: {safeDate(new Date().toISOString())}</p>
+          <p>Версия: BETA</p>
+          <p>API URL: {window.location.protocol}//{window.location.hostname}:8080</p>
+          <p>Текущий пользователь: {currentUser.name} ({currentUser.role})</p>
         </div>
       </div>
     </>
