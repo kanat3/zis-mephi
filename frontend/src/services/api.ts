@@ -360,41 +360,6 @@ class ApiClient {
       method: 'DELETE',
     });
   }
-
-  // TODO: Backend - Implement test report management endpoints
-  async deleteTestReport(id: number): Promise<void> {
-    throw new Error('TODO: Backend needs to implement DELETE /test-report endpoint');
-    // return this.request<void>(`/test-report?id=${id}`, {
-    //   method: 'DELETE',
-    // });
-  }
-
-  async archiveTestReport(id: number): Promise<void> {
-    throw new Error('TODO: Backend needs to implement POST /test-report/archive endpoint');
-    // return this.request<void>(`/test-report/archive?id=${id}`, {
-    //   method: 'POST',
-    // });
-  }
-
-  // TODO: Backend - Implement project import/export
-  async uploadProject(file: File): Promise<{ id: number }> {
-    throw new Error('TODO: Backend needs to implement POST /project/upload endpoint');
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // return this.request<{ id: number }>('/project/upload', {
-    //   method: 'POST',
-    //   body: formData,
-    //   headers: {}, // Let browser set Content-Type for FormData
-    // });
-  }
-
-  async downloadProject(id: number): Promise<Blob> {
-    throw new Error('TODO: Backend needs to implement GET /project/download endpoint');
-    // const response = await fetch(`${this.baseUrl}/project/download?id=${id}`, {
-    //   headers: this.getHeaders(),
-    // });
-    // return await response.blob();
-  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
