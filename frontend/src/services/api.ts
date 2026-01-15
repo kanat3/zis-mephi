@@ -65,7 +65,6 @@ export interface TestSuite {
   id: number;
   name: string;
   created_at: string;
-  // Extended fields (not in backend yet)
   description?: string;
   test_case_ids?: number[];
 }
@@ -78,8 +77,6 @@ export interface TestReport {
   passed_tests: number;
   duration: number;
   created_at: string;
-  // Extended fields (not in backend yet)
-  is_archived?: boolean;
 }
 
 // Token management

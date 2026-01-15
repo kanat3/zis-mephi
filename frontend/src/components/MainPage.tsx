@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { apiClient, TokenManager } from '../services/api.ts';
 import type { User as UserType, Project, Requirement, TestCase, TestPlan, TestSuite, TestReport } from '../services/api.ts';
-import { TestSuiteManagement } from './TestSuiteManagement.tsx';
 import {
   safeNumber,
   safeString,
@@ -513,8 +512,8 @@ function ProjectsView({
 }) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [newProject, setNewProject] = useState({ 
-    name: '', 
+  const [newProject, setNewProject] = useState({
+    name: '',
     responsible_name: currentUser.name,
     completion_date: ''
   });
@@ -525,11 +524,11 @@ function ProjectsView({
 
   const filteredProjects = activeProjects.filter(project => {
     if (!searchQuery.trim()) return true;
-    
+
     const query = searchQuery.toLowerCase();
     return (
       project.name.toLowerCase().includes(query) ||
-      (project.responsible_name && 
+      (project.responsible_name &&
        project.responsible_name.toLowerCase().includes(query))
     );
   });
@@ -637,7 +636,7 @@ function ProjectsView({
             {searchQuery ? 'Проекты не найдены' : 'Нет активных проектов'}
           </h3>
           <p className="text-[#6c757d] mb-4">
-            {searchQuery 
+            {searchQuery
               ? 'Попробуйте изменить поисковый запрос'
               : 'Создайте первый проект, нажав на кнопку "Новый проект"'}
           </p>
@@ -780,9 +779,12 @@ function ProjectDetailView({
   const [newTestCase, setNewTestCase] = useState({ name: '', description: '' });
   const [showNewTestPlanModal, setShowNewTestPlanModal] = useState(false);
   const [newTestPlan, setNewTestPlan] = useState({ name: '', goal: '', deadline: '' });
+  const [showNewTestSuiteModal, setShowNewTestSuiteModal] = useState(false);
+  const [newTestSuite, setNewTestSuite] = useState({ name: '' });
 
   const projectTestCases = testCasesData.filter(tc => tc.project_id === project.id);
   const projectTestPlans = testPlansData.filter(tp => tp.project_id === project.id);
+  const projectTestSuites = testSuitesData;
 
   const handleCreateTestCase = async () => {
     if (!newTestCase.name.trim()) {
@@ -815,6 +817,16 @@ function ProjectDetailView({
     }
   };
 
+  const handleDeleteTestSuite = async (testSuiteId: number) => {
+    try {
+      await apiClient.deleteTestSuite(testSuiteId);
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to delete test suite:', error);
+      showError('Ошибка при удалении тестового набора');
+    }
+  };
+
   const handleCreateTestPlan = async () => {
     if (!newTestPlan.name.trim() || !newTestPlan.goal.trim()) {
       showError('Заполните все обязательные поля');
@@ -837,10 +849,28 @@ function ProjectDetailView({
     }
   };
 
+  const handleCreateTestSuite = async () => {
+    if (!newTestSuite.name.trim()) {
+      showError('Заполните все обязательные поля');
+      return;
+    }
+
+    try {
+      await apiClient.createTestSuite({
+        name: newTestSuite.name,
+      });
+      setShowNewTestSuiteModal(false);
+      setNewTestSuite({ name: ''});
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to create test plan:', error);
+      showError('Ошибка при создании тестового набора');
+    }
+  };
+
   const handleDeleteTestPlan = async (testPlanId: number) => {
     try {
       await apiClient.deleteTestPlan(testPlanId);
-      showError('Тест-план удален', 'success');
       await reloadData();
     } catch (error) {
       console.error('Failed to delete test plan:', error);
@@ -982,16 +1012,35 @@ function ProjectDetailView({
       {/* Test Suites Tab */}
       {activeTab === 'test-suites' && (
         <div>
-          <h2 className="text-xl text-[#1e1e1e] mb-4">Тестовые наборы</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl text-[#1e1e1e]">Тестовые наборы</h2>
+            <button
+              onClick={() => setShowNewTestSuiteModal(true)}
+              className="px-4 py-2 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Новый тестовый набор
+            </button>
+          </div>
           <div className="space-y-3">
-            {testSuitesData.map((suite) => (
-              <div key={suite.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
-                <h3 className="text-[#f19fb5]">{suite.name}</h3>
+            {projectTestSuites.map((testSuite) => (
+              <div key={testSuite.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h5 className="text-[#6c757d] mb-2">{testSuite.name}</h5>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteTestSuite(testSuite.id)}
+                    className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
-            {testSuitesData.length === 0 && (
+            {projectTestSuites.length === 0 && (
               <div className="text-center text-[#6c757d] py-8">
-                Нет тестовых наборов
+                Нет тестовых планов
               </div>
             )}
           </div>
@@ -1040,6 +1089,47 @@ function ProjectDetailView({
               </button>
               <button
                 onClick={handleCreateTestCase}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
+              >
+                Создать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Test Suite Modal */}
+      {showNewTestSuiteModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setShowNewTestSuiteModal(false)}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">Новый тестовый набор</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">Название</label>
+                <input
+                  type="text"
+                  value={newTestSuite.name}
+                  onChange={(e) => setNewTestSuite({ ...newTestSuite, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите название..."
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowNewTestSuiteModal(false)}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleCreateTestSuite}
                 className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all"
               >
                 Создать
@@ -1240,13 +1330,15 @@ function ReportsView({
   testReportsData,
   projectsData,
   testPlansData,
-  testSuitesData
+  testSuitesData,
+  reloadData
 }: {
   showError: (msg: string, type?: 'error' | 'success') => void;
   testReportsData: TestReport[];
   projectsData: Project[];
   testPlansData: TestPlan[];
   testSuitesData: TestSuite[];
+  reloadData: () => Promise<void>;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -1267,6 +1359,51 @@ function ReportsView({
     return suite?.name || `Набор #${testSuiteId}`;
   };
 
+  const handleDeleteReports = async (report: TestReport) => {
+    if (!confirm(`Вы уверены, что хотите удалить отчет "${report.id}"?`)) {
+      return;
+    }
+
+    try {
+      await apiClient.deleteTestReport(report.id);
+      await reloadData();
+    } catch (error) {
+      console.error('Failed to delete report:', error);
+      showError('Ошибка при удалении отчета');
+    }
+  };
+
+  // Фильтрация отчётов по нескольким полям
+  const filteredReports = testReportsData.filter(report => {
+    const query = searchQuery.toLowerCase();
+
+    // Проверяем совпадение по ID отчёта
+    if (report.id.toString().includes(query)) return true;
+
+    // По ID проекта
+    if (report.project_id.toString().includes(query)) return true;
+
+    // По названию проекта (если есть совпадение в имени)
+    const projectName = getProjectName(report.project_id);
+    if (projectName.toLowerCase().includes(query)) return true;
+
+    // По ID тест-плана
+    if (report.test_plan_id && report.test_plan_id.toString().includes(query)) return true;
+
+    // По названию тест-плана
+    const testPlanName = getTestPlanName(report.test_plan_id);
+    if (testPlanName.toLowerCase().includes(query)) return true;
+
+    // По ID тестового набора
+    if (report.test_suite_id && report.test_suite_id.toString().includes(query)) return true;
+
+    // По названию тестового набора
+    const testSuiteName = getTestSuiteName(report.test_suite_id);
+    if (testSuiteName.toLowerCase().includes(query)) return true;
+
+    return false;
+  });
+
   return (
     <>
       <div className="mb-6">
@@ -1281,14 +1418,14 @@ function ReportsView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Поиск отчетов..."
+            placeholder="Поиск отчетов по ID, названию проекта, тест-плана или набора..."
             className="w-full pl-10 pr-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
           />
         </div>
       </div>
 
       <div className="space-y-3">
-        {testReportsData.map((report) => (
+        {filteredReports.map((report) => (
           <div key={report.id} className="bg-white border border-[#f1d6df] rounded-lg p-4">
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">
@@ -1304,12 +1441,20 @@ function ReportsView({
                   {new Date(report.created_at).toLocaleString('ru-RU')}
                 </p>
               </div>
+              <button
+                onClick={() => handleDeleteReports(report)}
+                className="p-2 text-[#6c757d] hover:text-[#b12e4a] hover:bg-[#ffd7db] rounded-lg transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           </div>
         ))}
-        {testReportsData.length === 0 && (
+        {filteredReports.length === 0 && (
           <div className="text-center text-[#6c757d] py-12">
-            Нет отчетов
+            {searchQuery
+              ? `Нет отчетов, соответствующих запросу "${searchQuery}"`
+              : 'Нет отчетов'}
           </div>
         )}
       </div>
