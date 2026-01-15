@@ -1049,7 +1049,7 @@ function ProjectDetailView({
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-[#f19fb5] mb-1">{plan.name}</h3>
-                    <p className="text-sm text-[#6c757d]">{plan.goal}</p>
+                    <p className="text-sm text-[#6c757d]">Описание: {plan.goal}</p>
                     {plan.deadline && (
                       <p className="text-sm text-[#6c757d] mt-1">
                         Дедлайн: {new Date(plan.deadline).toLocaleDateString('ru-RU')}
