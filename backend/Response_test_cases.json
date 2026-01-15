@@ -1,0 +1,664 @@
+{
+  "metadata": {
+    "class_name": "Response",
+    "generated_at": "2026-01-13T03:17:11.982873",
+    "generator_version": "1.0.0",
+    "total_cases": 18,
+    "valid_cases": 1,
+    "invalid_cases": 17
+  },
+  "test_cases": [
+    {
+      "id": 1,
+      "type": "valid",
+      "description": "All fields valid with typical values",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "OK"
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "invalid",
+      "description": "Invalid Request: user violates required constraint",
+      "data": {
+        "input": {
+          "request": {
+            "email": "test@example.com",
+            "user": null
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "OK"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.user",
+          "rule": "required",
+          "message": "Required - field is missing"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "invalid",
+      "description": "Invalid Request: user.age violates required constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": null,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.user.age",
+          "rule": "required",
+          "message": "Required - field is missing"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "invalid",
+      "description": "Invalid Request: user.age violates min constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": -1.0,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.user.age",
+          "rule": "min",
+          "message": "Min value - must be at least 0",
+          "constraint": 0.0,
+          "actual": -1.0
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "invalid",
+      "description": "Invalid Request: user.age violates max constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 100.0,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.user.age",
+          "rule": "max",
+          "message": "Max value - exceeds 99",
+          "constraint": 99.0,
+          "actual": 100.0
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "invalid",
+      "description": "Invalid Request: user.sex violates required constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": ""
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "OK"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.user.sex",
+          "rule": "required",
+          "message": "Required - field is empty"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "invalid",
+      "description": "Invalid Request: user.sex violates enum constraint (invalid value)",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": null
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "OK"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.user.sex",
+          "rule": "enum",
+          "message": "Enum - must be one of: male, female"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "invalid",
+      "description": "Invalid Request: user.sex violates enum constraint (case mismatch)",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": null
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "OK"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.user.sex",
+          "rule": "enum",
+          "message": "Enum - case sensitive mismatch"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "invalid",
+      "description": "Invalid Request: email violates regex constraint (empty string (pattern requires content))",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": null
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.email",
+          "rule": "regex",
+          "message": "Regex - empty string (pattern requires content)",
+          "pattern": "^[a-z0-9]+[\\.'\\-a-z0-9_]*[a-z0-9]+@mail\\.com$"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "invalid",
+      "description": "Invalid Request: email violates regex constraint (missing @ symbol)",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": null
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 500,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.request.email",
+          "rule": "regex",
+          "message": "Regex - missing @ symbol",
+          "pattern": "^[a-z0-9]+[\\.'\\-a-z0-9_]*[a-z0-9]+@mail\\.com$"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "invalid",
+      "description": "Invalid User: age violates required constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": null,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.user.age",
+          "rule": "required",
+          "message": "Required - field is missing"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "invalid",
+      "description": "Invalid User: age violates min constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": -1.0,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.user.age",
+          "rule": "min",
+          "message": "Min value - must be at least 0",
+          "constraint": 0.0,
+          "actual": -1.0
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "invalid",
+      "description": "Invalid User: age violates max constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 100.0,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.user.age",
+          "rule": "max",
+          "message": "Max value - exceeds 99",
+          "constraint": 99.0,
+          "actual": 100.0
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "invalid",
+      "description": "Invalid User: sex violates required constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": ""
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "OK"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.user.sex",
+          "rule": "required",
+          "message": "Required - field is empty"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "invalid",
+      "description": "Invalid User: sex violates enum constraint (invalid value)",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": null
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "OK"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.user.sex",
+          "rule": "enum",
+          "message": "Enum - must be one of: male, female"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "invalid",
+      "description": "Invalid User: sex violates enum constraint (case mismatch)",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": null
+          },
+          "test": {
+            "attr": 7
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "OK"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.user.sex",
+          "rule": "enum",
+          "message": "Enum - case sensitive mismatch"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "invalid",
+      "description": "Invalid Test: attr violates min constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 4.0
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.test.attr",
+          "rule": "min",
+          "message": "Min value - must be at least 5",
+          "constraint": 5.0,
+          "actual": 4.0
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "invalid",
+      "description": "Invalid Test: attr violates max constraint",
+      "data": {
+        "input": {
+          "request": {
+            "user": {
+              "age": 49,
+              "sex": "male"
+            },
+            "email": "test@example.com"
+          },
+          "user": {
+            "age": 49,
+            "sex": "male"
+          },
+          "test": {
+            "attr": 11.0
+          }
+        },
+        "output": {
+          "code": 200,
+          "data": {
+            "message": "age or email"
+          }
+        }
+      },
+      "violations": [
+        {
+          "field": "input.test.attr",
+          "rule": "max",
+          "message": "Max value - exceeds 10",
+          "constraint": 10.0,
+          "actual": 11.0
+        }
+      ]
+    }
+  ]
+}

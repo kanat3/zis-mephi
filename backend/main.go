@@ -563,15 +563,17 @@ func createTestCasesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tcs []TestCase
-	if err := json.NewDecoder(r.Body).Decode(&tcs); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	var data struct {
+		TestCases []TestCase `json:"test_cases"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Invalid request body: " + err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var res []int
 
-	for _, tc := range tcs {
+	for _, tc := range data.TestCases {
 		var id int
 
 		if tc.Name == "" {
@@ -579,7 +581,7 @@ func createTestCasesHandler(w http.ResponseWriter, r *http.Request) {
 			tc.Description = "Description: " + tc.Description
 		}
 
-		err := db.QueryRow("INSERT INTO test_cases (project_id, name, description data) VALUES ($1, $2, $3, $4) RETURNING id",
+		err := db.QueryRow("INSERT INTO test_cases (project_id, name, description, data) VALUES ($1, $2, $3, $4) RETURNING id",
 			projectID, tc.Name, tc.Description, tc.Data).Scan(&id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
