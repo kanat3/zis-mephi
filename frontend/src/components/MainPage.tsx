@@ -292,13 +292,28 @@ export function MainPage({ onLogout }: MainPageProps) {
         {activeTab === 'reports' && <ReportsView showError={showError} testReportsData={testReportsData} projectsData={projectsData} testPlansData={testPlansData} testSuitesData={testSuitesData}  reloadData={loadData}/>}
         {activeTab === 'testing' && (
           <TestingView
-            selectedTestSuite={selectedTestSuite}
-            setSelectedTestSuite={setSelectedTestSuite}
-            handleRunTests={handleRunTests}
+            projectsData={projectsData}
+            testPlansData={testPlansData}
             testSuitesData={testSuitesData}
-            selectedPlan={selectedPlan}
-            setSelectedPlan={setSelectedPlan}
             testCasesData={testCasesData}
+            handleRunTests={async (projectId: number, testPlanId: number, testSuiteId: number) => {
+              try {
+                showError('Запуск тестов...', 'success');
+                // Реализуйте здесь логику запуска тестов
+                const result = await apiClient.runTests({
+                  project_id: projectId,
+                  test_plan_id: testPlanId,
+                  test_suite_id: testSuiteId
+                });
+                showError('Тесты запущены успешно!', 'success');
+                // Обновить данные после запуска тестов
+                await loadData();
+              } catch (error) {
+                console.error('Failed to run tests:', error);
+                showError('Ошибка при запуске тестов');
+              }
+            }}
+            showError={showError}
           />
         )}
         {activeTab === 'profile' && <ProfileView currentUser={currentUser} />}
@@ -1800,22 +1815,88 @@ function ReportsView({
 
 // Testing View
 function TestingView({
-  selectedTestSuite,
-  setSelectedTestSuite,
+  projectsData = [],
+  testPlansData = [],
+  testSuitesData = [],
+  testCasesData = [],
   handleRunTests,
-  testSuitesData,
-  selectedPlan,
-  setSelectedPlan,
-  testCasesData
+  showError
 }: {
-  selectedTestSuite: string;
-  setSelectedTestSuite: (suite: string) => void;
-  handleRunTests: () => void;
-  testSuitesData: TestSuite[];
-  selectedPlan: string;
-  setSelectedPlan: (plan: string) => void;
-  testCasesData: TestCase[];
+  projectsData?: Project[];
+  testPlansData?: TestPlan[];
+  testSuitesData?: TestSuite[];
+  testCasesData?: TestCase[];
+  handleRunTests: (projectId: number, testPlanId: number, testSuiteId: number) => void;
+  showError: (msg: string, type?: 'error' | 'success') => void;
 }) {
+  const [selectedProject, setSelectedProject] = useState<number | ''>('');
+  const [selectedPlan, setSelectedPlan] = useState<number | ''>('');
+  const [selectedTestSuite, setSelectedTestSuite] = useState<number | ''>('');
+
+  // Фильтруем тест-планы по выбранному проекту
+  const filteredTestPlans = selectedProject && testPlansData
+    ? testPlansData.filter(plan => plan.project_id === selectedProject)
+    : [];
+
+  // Фильтруем тест-кейсы по выбранному проекту
+  const filteredTestCases = selectedProject && testCasesData
+    ? testCasesData.filter(testCase => testCase.project_id === selectedProject)
+    : [];
+
+  // Сбрасываем выбор тест-плана и тестового набора при смене проекта
+  useEffect(() => {
+    setSelectedPlan('');
+    setSelectedTestSuite('');
+  }, [selectedProject]);
+
+  // Сбрасываем выбор тестового набора при смене тест-плана
+  useEffect(() => {
+    setSelectedTestSuite('');
+  }, [selectedPlan]);
+
+  const handleRun = () => {
+    if (!selectedProject) {
+      showError('Выберите проект');
+      return;
+    }
+    if (!selectedPlan) {
+      showError('Выберите тест-план');
+      return;
+    }
+    if (!selectedTestSuite) {
+      showError('Выберите тестовый набор');
+      return;
+    }
+    
+    handleRunTests(selectedProject, selectedPlan, selectedTestSuite);
+  };
+
+  // Получаем статистику тестов по выбранному проекту
+  const passedTests = filteredTestCases.filter(tc => tc.status === 'passed').length;
+  const failedTests = filteredTestCases.filter(tc => tc.status === 'failed').length;
+  const pendingTests = filteredTestCases.filter(tc => tc.status === 'pending').length;
+  const totalTests = filteredTestCases.length;
+
+  // Получаем активные проекты (не архивные)
+  const activeProjects = projectsData
+    ? projectsData.filter(project => !project.is_archived)
+    : [];
+
+  // Находим выбранный проект для отображения названия
+  const selectedProjectObj = selectedProject
+    ? projectsData?.find(p => p.id === selectedProject)
+    : null;
+
+  // Находим выбранный тест-план для отображения названия
+  const selectedPlanObj = selectedPlan
+    ? testPlansData?.find(p => p.id === selectedPlan)
+    : null;
+
+  // Находим выбранный тестовый набор для отображения названия
+  const selectedTestSuiteObj = selectedTestSuite
+    ? testSuitesData?.find(s => s.id === selectedTestSuite)
+    : null;
+
   return (
     <>
       <div className="mb-6">
@@ -1824,49 +1905,115 @@ function TestingView({
       </div>
 
       <div className="bg-white border border-[#f1d6df] rounded-lg p-6 mb-6">
-        <h3 className="text-lg mb-4">Выбор тестового набора</h3>
-        <select
-          value={selectedTestSuite}
-          onChange={(e) => setSelectedTestSuite(e.target.value)}
-          className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5] mb-4"
-        >
-          <option value="">Выберите тестовый набор</option>
-          {testSuitesData.map((suite) => (
-            <option key={suite.id} value={String(suite.id)}>
-              {suite.name}
-            </option>
-          ))}
-        </select>
+        <h3 className="text-lg mb-4">Настройка тестирования</h3>
+        
+        {/* Выбор проекта */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#2b2f33]">
+            Выбор проекта
+          </label>
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+          >
+            <option value="">Выберите проект</option>
+            {activeProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name} {project.status === 'active' ? '✅' : '⏸️'}
+              </option>
+            ))}
+          </select>
+          {selectedProjectObj && (
+            <p className="text-sm text-[#6c757d] mt-2">
+              Выбран проект: {selectedProjectObj.name}
+            </p>
+          )}
+          {activeProjects.length === 0 && (
+            <p className="text-sm text-[#ff6b6b] mt-2">
+              Нет доступных проектов. Создайте проект в разделе "Проекты".
+            </p>
+          )}
+        </div>
+
+        {/* Выбор тест-плана */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#2b2f33]">
+            Выбор тест-плана
+          </label>
+          <select
+            value={selectedPlan}
+            onChange={(e) => setSelectedPlan(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+            disabled={!selectedProject}
+          >
+            <option value="">{selectedProject ? 'Выберите тест-план' : 'Сначала выберите проект'}</option>
+            {filteredTestPlans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.name} {plan.deadline && `(до ${new Date(plan.deadline).toLocaleDateString('ru-RU')})`}
+              </option>
+            ))}
+          </select>
+          {selectedPlanObj && (
+            <p className="text-sm text-[#6c757d] mt-2">
+              Выбран тест-план: {selectedPlanObj.name}
+              {selectedPlanObj.goal && (
+                <span className="ml-2">- {selectedPlanObj.goal}</span>
+              )}
+            </p>
+          )}
+          {selectedProject && filteredTestPlans.length === 0 && testPlansData && testPlansData.length > 0 && (
+            <p className="text-sm text-[#ff6b6b] mt-2">
+              Для этого проекта нет тест-планов. Создайте тест-план в деталях проекта.
+            </p>
+          )}
+        </div>
+
+        {/* Выбор тестового набора */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#2b2f33]">
+            Выбор тестового набора
+          </label>
+          <select
+            value={selectedTestSuite}
+            onChange={(e) => setSelectedTestSuite(e.target.value ? Number(e.target.value) : '')}
+            className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+            disabled={!selectedProject}
+          >
+            <option value="">{selectedProject ? 'Выберите тестовый набор' : 'Сначала выберите проект'}</option>
+            {testSuitesData && testSuitesData.map((suite) => (
+              <option key={suite.id} value={suite.id}>
+                {suite.name} {suite.description && `- ${suite.description}`}
+              </option>
+            ))}
+          </select>
+          {selectedTestSuiteObj && (
+            <p className="text-sm text-[#6c757d] mt-2">
+              Выбран тестовый набор: {selectedTestSuiteObj.name}
+            </p>
+          )}
+        </div>
+
+        {/* Кнопка запуска */}
         <button
-          onClick={handleRunTests}
-          className="w-full px-6 py-3 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center justify-center gap-2"
+          onClick={handleRun}
+          disabled={!selectedProject || !selectedPlan || !selectedTestSuite}
+          className="w-full px-6 py-3 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <PlayCircle className="w-5 h-5" />
           Запустить тесты
         </button>
-      </div>
-
-      <div className="bg-white border border-[#f1d6df] rounded-lg p-6">
-        <h3 className="text-lg mb-4">Статистика тестов</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl text-[#28a745] mb-1">
-              {testCasesData.filter(tc => tc.status === 'passed').length}
-            </div>
-            <div className="text-sm text-[#6c757d]">Пройдено</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl text-[#dc3545] mb-1">
-              {testCasesData.filter(tc => tc.status === 'failed').length}
-            </div>
-            <div className="text-sm text-[#6c757d]">Провалено</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl text-[#ffc107] mb-1">
-              {testCasesData.filter(tc => tc.status === 'pending').length}
-            </div>
-            <div className="text-sm text-[#6c757d]">Ожидает</div>
-          </div>
+        
+        <div className="mt-4 text-sm text-[#6c757d] text-center">
+          {selectedProject && selectedPlan && selectedTestSuite ? (
+            <p>
+              Готово к запуску: {selectedProjectObj?.name} → 
+              {selectedPlanObj?.name} → 
+              {selectedTestSuiteObj?.name}
+            </p>
+          ) : (
+            <p>Выберите проект, тест-план и тестовый набор для запуска тестирования</p>
+          )}
         </div>
       </div>
     </>
