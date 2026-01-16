@@ -1125,6 +1125,30 @@ func getRequirementsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(requirements)
 }
 
+
+func createRequirementHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkRole(w, r, managerRole) {
+		return
+	}
+
+	var req Requirement
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	var id int
+	err := db.QueryRow("INSERT INTO requirements (name, description, created_at) VALUES ($1, $2, $3) RETURNING id",
+		req.Name, req.Description, time.Now()).Scan(&id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"id": id})
+}
+
 func runTestsHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkRole(w, r, managerRole) {
 		return
@@ -1283,6 +1307,7 @@ func main() {
 	r.HandleFunc("/test-reports", getTestReportsHandler).Methods("GET")
 
 	r.HandleFunc("/requirements", getRequirementsHandler).Methods("GET")
+	r.HandleFunc("/requirement", createRequirementHandler).Methods("POST")
 
 	corsRouter := corsMiddleware(r)
 	log.Println("Server starting on port 8080...")
