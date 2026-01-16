@@ -1146,16 +1146,17 @@ func createRequirementHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var id int
-	err := db.QueryRow("INSERT INTO requirements (name, description, created_at) VALUES ($1, $2, $3) RETURNING id",
-		req.Name, req.Description, time.Now()).Scan(&id)
+	req.ID = uuid.Must(uuid.NewRandom())
+
+	_, err := db.Exec("INSERT INTO requirements (id, name, description, created_at) VALUES ($1, $2, $3, $4)",
+		req.ID, req.Name, req.Description, time.Now())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"id": id})
+	json.NewEncoder(w).Encode(map[string]uuid.UUID{"id": req.ID})
 }
 
 func runTestsHandler(w http.ResponseWriter, r *http.Request) {
