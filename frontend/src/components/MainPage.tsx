@@ -1645,31 +1645,147 @@ function RequirementsView({
   setRequirementsData: (data: Requirement[]) => void;
   showError: (msg: string, type?: 'error' | 'success') => void;
 }) {
+  const [showNewRequirementModal, setShowNewRequirementModal] = useState(false);
+  const [newRequirement, setNewRequirement] = useState({
+    name: '',
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleCreateRequirement = async () => {
+    if (!newRequirement.name.trim()) {
+      showError('Введите название требования');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiClient.createRequirement(newRequirement);
+      setNewRequirement({ name: '', description: '' });
+      setShowNewRequirementModal(false);
+    } catch (error) {
+      console.error('Failed to create requirement:', error);
+      showError('Ошибка при создании требования');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-[26px] text-[#1e1e1e]">Требования</h1>
+        <div>
+          <h1 className="text-[26px] text-[#1e1e1e]">Требования</h1>
+          <p className="text-[#6c757d]">Управление требованиями системы</p>
+        </div>
+
+        <button
+          onClick={() => setShowNewRequirementModal(true)}
+          className="px-4 py-2 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Новое требование
+        </button>
       </div>
 
-      <div className="bg-white border border-[#f1d6df] rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-[#fff6fb]">
-              <th className="text-left py-3 px-4 text-[#444]">Название</th>
-              <th className="text-left py-3 px-4 text-[#444]">Описание</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requirementsData.map((req) => (
-              <tr key={req.id} className="border-b border-[#f1d6df] last:border-b-0 hover:bg-[#fffafc]">
-                <td className="py-3 px-4">{req.name}</td>
-                <td className="py-3 px-4">{req.description}</td>
+      {requirementsData.length === 0 ? (
+        <div className="bg-white border border-[#f1d6df] rounded-lg p-8 text-center">
+          <FileText className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
+          <h3 className="text-lg text-[#2b2f33] mb-2">Нет требований</h3>
+          <p className="text-[#6c757d] mb-4">
+            Создайте первое требование, нажав на кнопку "Новое требование"
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white border border-[#f1d6df] rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#fff6fb]">
+                <th className="text-left py-3 px-4 text-[#444]">Название</th>
+                <th className="text-left py-3 px-4 text-[#444]">Описание</th>
+                <th className="text-left py-3 px-4 text-[#444]">Дата создания</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {requirementsData.map((req) => (
+                <tr key={req.id} className="border-b border-[#f1d6df] last:border-b-0 hover:bg-[#fffafc]">
+                  <td className="py-3 px-4 font-medium">{req.name}</td>
+                  <td className="py-3 px-4">{req.description}</td>
+                  <td className="py-3 px-4 text-sm text-[#6c757d]">
+                    {new Date(req.created_at).toLocaleDateString('ru-RU')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* New Requirement Modal */}
+      {showNewRequirementModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setShowNewRequirementModal(false)}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">Новое требование</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Название требования <span className="text-[#dc3545]">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newRequirement.name}
+                  onChange={(e) => setNewRequirement({ ...newRequirement, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите название требования"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Описание требования
+                </label>
+                <textarea
+                  value={newRequirement.description}
+                  onChange={(e) => setNewRequirement({ ...newRequirement, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Опишите требование подробнее"
+                  rows={4}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowNewRequirementModal(false)}
+                disabled={loading}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleCreateRequirement}
+                disabled={loading || !newRequirement.name.trim()}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Создание...
+                  </>
+                ) : (
+                  'Создать'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

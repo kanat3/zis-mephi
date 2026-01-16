@@ -186,6 +186,13 @@ class ApiClient {
     return this.request('/status');
   }
 
+  async createRequirement(data: { name: string; description: string }): Promise<{id: number}> {
+    return this.request<{ id: number }>('/requirement', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getProjects(): Promise<Project[]> {
     return this.request<Project[]>('/projects');
   }
