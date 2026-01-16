@@ -1052,7 +1052,7 @@ func getRequirementsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if *integration != "" {
-		rows, err := db.Query("SELECT id, name, description, responsible_name, status, completion_date, is_archived, created_at FROM projects")
+		rows, err := db.Query("SELECT id, rodik_project_id, name, description, responsible_name, status, completion_date, is_archived, created_at FROM projects")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -1063,7 +1063,7 @@ func getRequirementsHandler(w http.ResponseWriter, r *http.Request) {
 		for rows.Next() {
 			var p Project
 			var completionDate sql.NullString
-			err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, &completionDate, &p.IsArchived, &p.CreatedAt)
+			err := rows.Scan(&p.ID, &p.RodikProjectID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, &completionDate, &p.IsArchived, &p.CreatedAt)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
