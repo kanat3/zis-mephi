@@ -1052,51 +1052,59 @@ func getRequirementsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if *integration != "" {
-		projectIDStr := r.URL.Query().Get("project_id")
-		projectID, err := strconv.Atoi(projectIDStr)
-		if err != nil {
-			http.Error(w, "Invalid project_id", http.StatusBadRequest)
-			return
-		}
-
-		var rodikProjectID uuid.UUID
-
-		err = db.QueryRow("SELECT rodik_project_id FROM projects WHERE id = $1", projectID).Scan(&rodikProjectID)
+		rows, err := db.Query("SELECT id, name, description, responsible_name, status, completion_date, is_archived, created_at FROM projects")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		defer rows.Close()
+
+		var projects []Project
+		for rows.Next() {
+			var p Project
+			var completionDate sql.NullString
+			err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, &completionDate, &p.IsArchived, &p.CreatedAt)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			p.CompletionDate = completionDate.String
+			projects = append(projects, p)
 		}
 
 		client := &http.Client{}
 
-		req, err := http.NewRequest("GET", rodikAPI+"/requirements?projectId="+rodikProjectID.String(), nil)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		req.Header.Add("Authorization", "Bearer tms")
-		resp, err := client.Do(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		var rodikReqs []RodikRequirement
-
-		if err := json.NewDecoder(resp.Body).Decode(&rodikReqs); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		var reqs []Requirement
-		for _, rr := range rodikReqs {
-			reqs = append(reqs, Requirement{
-				ID:          rr.ID,
-				Name:        rr.Title,
-				Description: rr.Description,
-				CreatedAt:   rr.CreatedAt,
-			})
+
+		for _, p := range projects {
+			req, err := http.NewRequest("GET", rodikAPI+"/requirements?projectId="+p.RodikProjectID.String(), nil)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			req.Header.Add("Authorization", "Bearer tms")
+			resp, err := client.Do(req)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			var rodikReqs []RodikRequirement
+
+			if err := json.NewDecoder(resp.Body).Decode(&rodikReqs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			for _, rr := range rodikReqs {
+				reqs = append(reqs, Requirement{
+					ID:          rr.ID,
+					Name:        rr.Title,
+					Description: rr.Description,
+					CreatedAt:   rr.CreatedAt,
+				})
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
