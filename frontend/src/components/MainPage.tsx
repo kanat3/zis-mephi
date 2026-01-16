@@ -859,8 +859,8 @@ function ProjectDetailView({
         id: editTestPlanModal.testPlan.id,
         description: editDescription
       });
-      setEditTestPlanModal({show: false, testPlan: null});
       setEditDescription('');
+      setEditTestPlanModal({show: false, testPlan: null});
       await reloadData();
     } catch (error) {
       console.error('Failed to update test plan:', error);
@@ -1270,7 +1270,9 @@ function ProjectDetailView({
                 </label>
                 <textarea
                   value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
+                  onChange={(e) => {
+                    setEditDescription(e.target.value);
+                  }}
                   className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
                   placeholder="Введите описание тест-плана"
                   rows={4}
@@ -1279,7 +1281,10 @@ function ProjectDetailView({
             </div>
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setEditTestPlanModal({show: false, testPlan: null})}
+                onClick={() => {
+                  setEditTestPlanModal({show: false, testPlan: null});
+                  editTestPlanModal.show = false;
+                }}
                 className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
               >
                 Отмена
@@ -1324,7 +1329,10 @@ function ProjectDetailView({
             </div>
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setEditTestCaseModal({show: false, testCase: null})}
+                onClick={() => {
+                  setEditTestCaseModal({show: false, testCase: null});
+                  editTestCaseModal.show = false;
+                }}
                 className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
               >
                 Отмена
@@ -1369,7 +1377,10 @@ function ProjectDetailView({
             </div>
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setEditTestSuiteModal({show: false, testSuite: null})}
+                onClick={() => {
+                  setEditTestSuiteModal({show: false, testSuite: null});
+                  editTestSuiteModal.show = false;
+                }}
                 className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all"
               >
                 Отмена
