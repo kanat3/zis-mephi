@@ -132,14 +132,14 @@ var (
 func initDB() error {
 
 	cfg := config.GetConfig()
-	port := cfg.Database.Port
+	//port := cfg.Database.Port
 
-	if *integration != "" {
-		port = "5433"
-	}
+	// if *integration != "" {
+	// 	port = "5433"
+	// }
 
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Database.Host, port, cfg.Database.User, cfg.Database.Password, cfg.Database.DBname)
+		cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Password, cfg.Database.DBname)
 
 	fmt.Print((connStr))
 	var err error
