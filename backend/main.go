@@ -346,8 +346,8 @@ func createProjectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var id int
-	err := db.QueryRow("INSERT INTO projects (name, description, responsible_name, completion_date) VALUES ($1, $2, $3, $4) RETURNING id",
-		p.Name, p.Description, p.ResponsibleName, p.CompletionDate).Scan(&id)
+	err := db.QueryRow("INSERT INTO projects (name, description, responsible_name, completion_date, rodik_project_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+		p.Name, p.Description, p.ResponsibleName, p.CompletionDate, p.RodikProjectID).Scan(&id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
