@@ -36,6 +36,7 @@ export interface Project {
 export interface Requirement {
   id: number;
   name: string;
+  project_id?: number;
   description: string;
   created_at: string;
 }
@@ -184,6 +185,13 @@ class ApiClient {
 
   async getStatus(): Promise<any> {
     return this.request('/status');
+  }
+
+  async createRequirement(data: { name: string; description: string; created_at: string }): Promise<{id: number}> {
+    return this.request<{ id: number }>('/requirement', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async getProjects(): Promise<Project[]> {

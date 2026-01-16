@@ -1645,31 +1645,270 @@ function RequirementsView({
   setRequirementsData: (data: Requirement[]) => void;
   showError: (msg: string, type?: 'error' | 'success') => void;
 }) {
+  const [showNewRequirementModal, setShowNewRequirementModal] = useState(false);
+  const [newRequirement, setNewRequirement] = useState({
+    name: '',
+    description: '',
+    project_id: '' as number | ''
+  });
+  const [loading, setLoading] = useState(false);
+  
+  // Состояние для хранения реальных проектов
+  const [projectsData, setProjectsData] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
+  const loadProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const projects = await apiClient.getProjects();
+      // Фильтруем только активные проекты (не архивные)
+      const activeProjects = projects.filter(project => !project.is_archived);
+      setProjectsData(activeProjects);
+      
+      // Устанавливаем первый проект по умолчанию, если есть активные проекты
+      // Используем текущее значение newRequirement через callback
+      setNewRequirement(prev => {
+        if (activeProjects.length > 0 && !prev.project_id) {
+          return {
+            ...prev,
+            project_id: activeProjects[0].id
+          };
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      showError('Ошибка загрузки списка проектов');
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  // Загружаем проекты при открытии модального окна
+  useEffect(() => {
+    if (showNewRequirementModal) {
+      loadProjects();
+    }
+  }, [showNewRequirementModal]);
+
+  const handleCreateRequirement = async () => {
+    if (!newRequirement.name.trim()) {
+      showError('Введите название требования');
+      return;
+    }
+
+    // project_id теперь необязательный, но лучше проверить
+    if (!newRequirement.project_id && projectsData.length > 0) {
+      // Если не выбран проект, но есть активные проекты
+      // можно установить первый по умолчанию или показать ошибку
+      showError('Выберите проект для требования');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Подготавливаем данные для отправки
+      const requirementData: any = {
+        name: newRequirement.name,
+        description: newRequirement.description
+      };
+      
+      requirementData.created_at = new Date().toISOString();
+      
+      const createdRequirement = await apiClient.createRequirement(requirementData);
+      
+      setNewRequirement({ 
+        name: '', 
+        description: '', 
+        project_id: projectsData.length > 0 ? projectsData[0].id : ''
+      });
+      
+      setShowNewRequirementModal(false);
+      
+    } catch (error) {
+      console.error('Failed to create requirement:', error);
+      showError('Ошибка при создании требования');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Получаем название выбранного проекта
+  const getSelectedProjectInfo = () => {
+    if (!newRequirement.project_id || projectsData.length === 0) {
+      return { name: 'Не выбран', description: '', responsible: '' };
+    }
+    
+    const project = projectsData.find(p => p.id === newRequirement.project_id);
+    return {
+      name: project ? project.name : 'Неизвестный проект',
+      description: project?.description || '',
+      responsible: project?.responsible_name || ''
+    };
+  };
+
+  const projectInfo = getSelectedProjectInfo();
 
   return (
     <>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-[26px] text-[#1e1e1e]">Требования</h1>
+        <div>
+          <h1 className="text-[26px] text-[#1e1e1e]">Требования</h1>
+          <p className="text-[#6c757d]">Управление требованиями системы</p>
+        </div>
+
+        <button
+          onClick={() => setShowNewRequirementModal(true)}
+          className="px-4 py-2 bg-[#f19fb5] text-white rounded-lg hover:bg-[#e27091] transition-all flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Новое требование
+        </button>
       </div>
 
-      <div className="bg-white border border-[#f1d6df] rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-[#fff6fb]">
-              <th className="text-left py-3 px-4 text-[#444]">Название</th>
-              <th className="text-left py-3 px-4 text-[#444]">Описание</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requirementsData.map((req) => (
-              <tr key={req.id} className="border-b border-[#f1d6df] last:border-b-0 hover:bg-[#fffafc]">
-                <td className="py-3 px-4">{req.name}</td>
-                <td className="py-3 px-4">{req.description}</td>
+      {requirementsData.length === 0 ? (
+        <div className="bg-white border border-[#f1d6df] rounded-lg p-8 text-center">
+          <FileText className="w-12 h-12 text-[#e8e9ea] mx-auto mb-4" />
+          <h3 className="text-lg text-[#2b2f33] mb-2">Нет требований</h3>
+          <p className="text-[#6c757d] mb-4">
+            Создайте первое требование, нажав на кнопку "Новое требование"
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white border border-[#f1d6df] rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#fff6fb]">
+                <th className="text-left py-3 px-4 text-[#444]">Название</th>
+                <th className="text-left py-3 px-4 text-[#444]">Описание</th>
+                <th className="text-left py-3 px-4 text-[#444]">Дата создания</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {requirementsData.map((req) => (
+                <tr key={req.id} className="border-b border-[#f1d6df] last:border-b-0 hover:bg-[#fffafc]">
+                  <td className="py-3 px-4 font-medium">{req.name}</td>
+                  <td className="py-3 px-4">{req.description}</td>
+                  <td className="py-3 px-4 text-sm text-[#6c757d]">
+                    {new Date(req.created_at).toLocaleDateString('ru-RU')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* New Requirement Modal */}
+      {showNewRequirementModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center"
+          onClick={() => setShowNewRequirementModal(false)}
+        >
+          <div
+            className="bg-white rounded-[10px] p-8 max-w-[500px] w-[90%] shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl text-[#f19fb5] mb-6">Новое требование</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Название требования <span className="text-[#dc3545]">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newRequirement.name}
+                  onChange={(e) => setNewRequirement({ ...newRequirement, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Введите название требования"
+                  disabled={loading}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Проект {projectsData.length > 0 && <span className="text-[#dc3545]">*</span>}
+                </label>
+                {loadingProjects ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-4 h-4 border-2 border-[#f19fb5] border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span className="text-sm text-[#6c757d]">Загрузка проектов...</span>
+                  </div>
+                ) : projectsData.length === 0 ? (
+                  <div className="p-3 bg-[#fff3cd] border border-[#ffeaa7] rounded-lg">
+                    <p className="text-sm text-[#856404]">
+                      Нет активных проектов. Создайте проект в разделе "Проекты" перед добавлением требований.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      value={newRequirement.project_id || ''}
+                      onChange={(e) => setNewRequirement({ 
+                        ...newRequirement, 
+                        project_id: e.target.value ? Number(e.target.value) : ''
+                      })}
+                      className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                      disabled={loading}
+                    >
+                      {projectsData.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {newRequirement.project_id && (
+                      <div className="mt-2 p-2 bg-[#f8f9fa] border border-[#e8e9ea] rounded-lg">
+                        <p className="text-xs text-[#6c757d]">
+                          <strong>Выбран проект:</strong> {projectInfo.name}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm mb-2 text-[#2b2f33]">
+                  Описание требования
+                </label>
+                <textarea
+                  value={newRequirement.description}
+                  onChange={(e) => setNewRequirement({ ...newRequirement, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#e8e9ea] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f19fb5]"
+                  placeholder="Опишите требование подробнее"
+                  rows={3}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowNewRequirementModal(false)}
+                disabled={loading}
+                className="flex-1 px-6 py-3 rounded-lg border border-[#e8e9ea] text-[#2b2f33] hover:bg-[#f8f9fa] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleCreateRequirement}
+                disabled={loading || !newRequirement.name.trim() || (projectsData.length > 0 && !newRequirement.project_id)}
+                className="flex-1 px-6 py-3 rounded-lg bg-[#f19fb5] text-white hover:bg-[#e27091] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Создание...
+                  </>
+                ) : (
+                  'Создать'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
