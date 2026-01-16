@@ -36,6 +36,7 @@ export interface Project {
 export interface Requirement {
   id: number;
   name: string;
+  project_id?: number;
   description: string;
   created_at: string;
 }
