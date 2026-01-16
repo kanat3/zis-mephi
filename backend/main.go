@@ -35,7 +35,7 @@ type Project struct {
 	Description     string    `json:"description"`
 	ResponsibleName string    `json:"responsible_name"`
 	Status          string    `json:"status"`
-	CompletionDate  *string   `json:"completion_date,omitempty"`
+	CompletionDate  string    `json:"completion_date"`
 	IsArchived      bool      `json:"is_archived"`
 	CreatedAt       time.Time `json:"created_at"`
 }
@@ -321,7 +321,7 @@ func getProjectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if completionDate.Valid {
-		p.CompletionDate = &completionDate.String
+		p.CompletionDate = completionDate.String
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -339,10 +339,10 @@ func createProjectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if *p.CompletionDate == "" {
+	if p.CompletionDate == "" {
 		futureDate := time.Now().Add(2 * 7 * 24 * time.Hour)
 		data := futureDate.Format(time.RFC1123)
-		*p.CompletionDate = data
+		p.CompletionDate = data
 	}
 
 	var id int
@@ -567,7 +567,7 @@ func createTestCasesHandler(w http.ResponseWriter, r *http.Request) {
 		TestCases []TestCase `json:"test_cases"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Invalid request body: " + err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -1124,7 +1124,6 @@ func getRequirementsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(requirements)
 }
-
 
 func createRequirementHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkRole(w, r, managerRole) {
