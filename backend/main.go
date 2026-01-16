@@ -284,7 +284,7 @@ func getProjectsHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var p Project
 		var completionDate sql.NullString
-		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, completionDate, &p.IsArchived, &p.CreatedAt)
+		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, &completionDate, &p.IsArchived, &p.CreatedAt)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
