@@ -1713,6 +1713,8 @@ function RequirementsView({
         description: newRequirement.description
       };
       
+      requirementData.created_at = new Date().toISOString();
+      
       const createdRequirement = await apiClient.createRequirement(requirementData);
       
       setNewRequirement({ 

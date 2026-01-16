@@ -187,7 +187,7 @@ class ApiClient {
     return this.request('/status');
   }
 
-  async createRequirement(data: { name: string; description: string }): Promise<{id: number}> {
+  async createRequirement(data: { name: string; description: string; created_at: string }): Promise<{id: number}> {
     return this.request<{ id: number }>('/requirement', {
       method: 'POST',
       body: JSON.stringify(data),
