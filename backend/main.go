@@ -283,11 +283,13 @@ func getProjectsHandler(w http.ResponseWriter, r *http.Request) {
 	var projects []Project
 	for rows.Next() {
 		var p Project
-		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, &p.CompletionDate, &p.IsArchived, &p.CreatedAt)
+		var completionDate sql.NullString
+		err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.ResponsibleName, &p.Status, completionDate, &p.IsArchived, &p.CreatedAt)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		p.CompletionDate = completionDate.String
 		projects = append(projects, p)
 	}
 
