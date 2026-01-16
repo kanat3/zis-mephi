@@ -51,7 +51,7 @@ services:
     restart: always
     links:
       - "postgresql_db:postgresql_db"
-      - "postgresql_db_int:postgresql_db_int"
+      #- "postgresql_db_int:postgresql_db_int"
     networks:
       - zis
     healthcheck:
